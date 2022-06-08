@@ -1,0 +1,14 @@
+<odoo>
+  <data>
+    <record model="ir.ui.view" id="helpdesk_ticket_number_view_tree">
+      <field name="name">helpdesk.ticket_number.list.view</field>
+      <field name="model">helpdesk.ticket</field>
+      <field name="inherit_id" ref="helpdesk.helpdesk_tickets_view_tree"/>
+      <field name="arch" type="xml">
+        <field name="display_name" position="after">
+          <field name="ticket_number" string="Ticket no"></field>
+        </field>
+      </field>
+    </record>
+  </data>
+</odoo>
