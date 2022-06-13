@@ -10,5 +10,15 @@
         </field>
       </field>
     </record>
-    </data>
+    <!-- <record id="helpdesk_ticket_number_search" model="ir.ui.view">
+      <field name="name">helpdesk.ticket_number.search.view</field>
+      <field name="model">helpdesk.ticket</field>
+      <field name="inherit_id" ref="helpdesk.helpdesk_tickets_view_search"/>
+      <field name="arch" type="xml">
+        <field name="id" position="attributes">
+          <attribute name='attrs'>{"selectable":True}</attribute>
+        </field>
+      </field>
+    </record> -->
+  </data>
 </odoo>
