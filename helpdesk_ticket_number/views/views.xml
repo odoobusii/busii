@@ -6,9 +6,9 @@
       <field name="inherit_id" ref="helpdesk.helpdesk_tickets_view_tree"/>
       <field name="arch" type="xml">
         <field name="display_name" position="after">
-          <field name="ticket_number" string="Ticket no"></field>
+          <field name="id" string="Ticket ID"></field>
         </field>
       </field>
     </record>
-  </data>
+    </data>
 </odoo>
