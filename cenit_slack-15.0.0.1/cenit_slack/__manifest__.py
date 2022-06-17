@@ -23,7 +23,7 @@
     'version': '0.1',
     'author': 'Cenit IO',
     'website': 'https://cenit.io',
-    # ~ 'license': 'LGPL-3',
+    'license': 'LGPL-3',
     'category': 'Extra Tools',
     'summary': "A messaging app for teams",
     'description': "A messaging app for teams",
