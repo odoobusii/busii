@@ -1,0 +1,16 @@
+<odoo>
+    <data>
+      <template id="custom_report_Invoice" inherit_id="account.report_invoice_document">
+        <xpath expr="//div[@class='mt16']" position="replace">
+          <p>VAT no.: <span t-field="o.partner_id.vat"/> </p>
+        </xpath>
+        <xpath expr="//p[@name='payment_communication']" position="replace">
+          <br></br>
+          Please use the following reference for your payment :
+            <b>
+              <span t-field="o.payment_reference"/>
+            </b>
+        </xpath>
+      </template>
+    </data>
+</odoo>
