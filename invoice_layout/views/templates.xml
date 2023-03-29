@@ -12,7 +12,7 @@
         </xpath>
         <xpath expr="//p[@name='payment_communication']" position="replace">
           <br></br>
-          Please use the following reference for your payment :
+           Please use the following reference for your payment :
             <b>
               <span t-field="o.payment_reference"/>
             </b>
