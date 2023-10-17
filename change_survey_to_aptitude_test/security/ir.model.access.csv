@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_change_survey_to_aptitude_test_change_survey_to_aptitude_test,change_survey_to_aptitude_test.change_survey_to_aptitude_test,model_change_survey_to_aptitude_test_change_survey_to_aptitude_test,base.group_user,1,1,1,1

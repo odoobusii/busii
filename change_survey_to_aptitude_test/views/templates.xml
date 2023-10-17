@@ -1,0 +1,12 @@
+<odoo>
+    <data>
+    <template id='id="survey_fill_form_start_custom"' inherit_id ='survey.survey_fill_form_start'>
+            <xpath expr="//button[1]//t[2]" position="replace">
+              <t t-else="">
+                  Start Aptitude Test
+              </t>
+
+           </xpath>
+    </template>
+    </data>
+</odoo>
