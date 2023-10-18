@@ -1,12 +1,14 @@
 <odoo>
     <data>
-    <template id='id="survey_fill_form_start_custom"' inherit_id ='survey.survey_fill_form_start'>
-            <xpath expr="//button[1]//t[2]" position="replace">
+    <template id='survey_fill_form_start_custom' inherit_id='survey.survey_fill_form_start'>
+        <xpath expr="//div[hasclass('o_survey_start')]//t[2]//div[1]//span[1]" position="replace">
+            <span t-if="not survey.certification">Time limit for this test: </span>
+        </xpath>
+        <xpath expr="//button[1]//t[2]" position="replace">
               <t t-else="">
                   Start Aptitude Test
               </t>
-
-           </xpath>
+        </xpath>
     </template>
     </data>
 </odoo>
