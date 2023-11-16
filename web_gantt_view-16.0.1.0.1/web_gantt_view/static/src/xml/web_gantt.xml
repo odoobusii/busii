@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<templates>
+
+    <t t-name="GanttView">
+        <div> 
+            <div t-attf-id="{{widget.chart_id}}" class="acs_gantt"/>
+        </div>
+    </t>
+
+    <t t-name="GanttViewCreateButton">
+        <div t-if="widget.is_action_enabled('create')">
+            <button type="button" class="btn btn-primary btn-sm acs_gantt_button_create">
+                Create
+            </button>
+        </div>
+    </t>
+
+</templates>
