@@ -1,0 +1,17 @@
+.o_main .acs_gantt {
+    min-height: 500px;
+}
+
+.o_main .acs_gantt .acs_gantt_button_create {
+    position: absolute;
+    top: 5px;
+}
+
+@media print {
+    .acs_gantt button {
+        /*display: none;*/
+    }
+    .acs_gantt > table > tbody > tr > td > div > div {
+        overflow: hidden !important;
+    }
+}

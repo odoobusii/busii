@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_project_project_gantt" model="ir.ui.view">
+        <field name="name">project.project.gantt</field>
+        <field name="model">project.project</field>
+        <field name="type">gantt</field>
+        <field name="arch" type="xml">
+            <gantt date_start="date_start" date_stop="date" progress="progress_rate" string="Projects">
+            </gantt>
+        </field>
+    </record>
+
+    <record id="project.open_view_project_all" model="ir.actions.act_window">
+        <field name="view_mode">kanban,tree,form,gantt</field>
+    </record>
+
+    <record id="view_task_form" model="ir.ui.view">
+        <field name="name">project.task.form</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2"/>
+        <field eval="2" name="priority"/>
+        <field name="arch" type="xml">
+            <field name="date_last_stage_update" position="after">
+                <separator string="Gantt View" colspan="2"/>
+                <field name="acs_date_start"/>
+                <field name="acs_date_end"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_project_task_gantt" model="ir.ui.view">
+        <field name="name">project.task.gantt</field>
+        <field name="model">project.task</field>
+        <field name="arch" type="xml">
+            <gantt date_start="acs_date_start" date_stop="acs_date_end" string="Tasks"/>
+        </field>
+    </record>
+
+    <record id="view_task_gantt" model="ir.ui.view">
+        <field name="name">project.task.gantt</field>
+        <field name="model">project.task</field>
+        <field eval="2" name="priority"/>
+        <field name="arch" type="xml">
+            <gantt date_start="acs_date_start" date_stop="acs_date_end" progress="progress" string="Tasks" default_group_by="project_id">
+            </gantt>
+        </field>
+    </record>
+
+    <record id="project.action_view_task" model="ir.actions.act_window">
+        <field name="view_mode">kanban,tree,form,calendar,pivot,graph,gantt</field>
+    </record>
+
+    <record id="project.act_project_project_2_project_task_all" model="ir.actions.act_window">
+        <field name="view_mode">kanban,tree,form,calendar,pivot,graph,gantt</field>
+    </record>
+
+    <record id="project.dblc_proj" model="ir.actions.act_window">
+        <field name="view_mode">tree,form,calendar,graph,kanban,gantt</field>
+    </record>
+
+    <record id="project.action_view_all_task" model="ir.actions.act_window">
+        <field name="view_mode">kanban,tree,form,calendar,pivot,graph,activity,gantt</field>
+    </record>
+
+</odoo>
