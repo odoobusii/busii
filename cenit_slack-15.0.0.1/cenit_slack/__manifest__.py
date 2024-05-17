@@ -20,7 +20,7 @@
 ##############################################################################
 {
     'name': 'Slack Integration',
-    'version': '0.1',
+    "version": "17.0.1.0.0",
     'author': 'Cenit IO',
     'website': 'https://cenit.io',
     'license': 'LGPL-3',

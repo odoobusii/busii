@@ -19,7 +19,7 @@
 # from v8 gantt view module but structure is rewritten.
 {
     "name": "Web Gantt View",
-    "version": "1.0.1",
+    "version": "17.0.1.0.0",
     "license": "OPL-1",
     "author": "Almighty Consulting Solutions Pvt. Ltd.",
     'website': 'https://www.almightycs.com',
