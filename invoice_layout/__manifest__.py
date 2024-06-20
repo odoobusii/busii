@@ -16,7 +16,7 @@
     # Check https://github.com/odoo/odoo/blob/15.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Customizations',
-    'version': '17.0.0.0.1',
+    "version": "17.0.1.0.0",
     'license': 'LGPL-3',
     'installable': True,
     'application': False,
@@ -31,4 +31,5 @@
         #'views/views.xml',
         'views/templates.xml',
     ],
+    'images': ['static/description/icon.jpg'],
 }
