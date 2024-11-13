@@ -69,7 +69,7 @@ class CustomWebsiteBlog(WebsiteBlog):
             
             # Log the search results
             if blog_post:
-                # _logger.info(f"BlogPost found: ID {blog_post.id}, title='{blog_post.name}'")
+                _logger.info(f"BlogPost found: ID {blog_post.id}, title='{blog_post.name}'")
             else:
                 _logger.warning(f"No BlogPost found for blog='{blog}', post='{post}'")
                 return request.not_found()
