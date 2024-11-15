@@ -13,24 +13,140 @@ class CustomWebsiteBlog(WebsiteBlog):
         Render the blog post page using the new URL format.
         Log each step to monitor the routing and search process.
         """
-        # _logger.info(f"Received request for blog post: blog='{blog}', post='{post}")
+        _logger.info(f"Received request for blog post: blog='{blog}', post='{post}")
         
         try:
+            # Fetch all valid blogs and posts
+            valid_blogs = request.env['blog.blog'].search([])
+            valid_blog_posts = request.env['blog.post'].search([])
+            
+            # Create a dictionary of valid blog and post names mapped to their IDs
+            valid_blog_ids = {blog_record.id: blog_record.name for blog_record in valid_blogs}
+            valid_post_ids = {post_record.id: post_record.name for post_record in valid_blog_posts}
+            
+            _logger.info(f"Valid blogs: {[f'{k}: {v}' for k, v in valid_blog_ids.items()]}")
+            _logger.info(f"Valid posts: {[f'{k}: {v}' for k, v in valid_post_ids.items()]}")
 
-            def strip_numeric_id(slug):
-                parts = slug.rsplit('-', 1)
-                # Check if the last part is a number (indicating an ID)
-                if len(parts) > 1 and parts[-1].isdigit():
-                    _logger.info(f"Detected numeric ID in slug '{slug}', stripping it out.")
-                    return parts[0]  # Return slug without numeric ID
-                else:
-                    _logger.info(f"No numeric ID detected in slug '{slug}', keeping as is.")
-                    return slug 
+            # def strip_numeric_id(slug):
+            #     parts = slug.rsplit('-', 1)
+            #     # Check if the last part is a number (indicating an ID)
+            #     if len(parts) > 1 and parts[-1].isdigit():
+            #         _logger.info(f"Detected numeric ID in slug '{slug}', stripping it out.")
+            #         return parts[0]  # Return slug without numeric ID
+            #     else:
+            #         _logger.info(f"No numeric ID detected in slug '{slug}', keeping as is.")
+            #         return slug 
+            # def strip_numeric_id(slug, valid_names):
+            #     """
+            #     Strip numeric IDs only if they match the known IDs for old URLs.
+            #     Otherwise, keep the slug as is.
+            #     """
+            #     # if '-' in slug:
+            #     #     parts = slug.rsplit('-', 1)
+            #     #     if parts[-1].isdigit():
+            #     #         numeric_id = int(parts[-1])
+            #     #         # Check if the numeric ID exists in the list of valid IDs
+            #     #         if numeric_id in valid_ids:
+            #     #             _logger.info(f"Stripping numeric ID '{numeric_id}' from slug '{slug}'")
+            #     #             return parts[0]  # Remove the numeric ID
+            #     # # If no numeric ID or not a valid ID, return the original slug
+            #     # _logger.info(f"No numeric ID to strip for slug '{slug}'")
+            #     # return slug
+            #     if '-' in slug:
+            #         parts = slug.rsplit('-', 1)
+            #         if parts[-1].isdigit():
+            #             numeric_id = int(parts[-1])
+            #             # Check if the numeric ID exists in the list of valid IDs
+            #             if slug in valid_names:
+            #                 _logger.info(f"Slug '{slug}' matches a valid name, keeping as is")
+            #                 return slug
+            #             if numeric_id in valid_ids:
+            #                 _logger.info(f"Stripping numeric ID '{numeric_id}' from slug '{slug}'")
+            #                 return parts[0]  # Remove the numeric ID
+            #         # Check if the slug matches a valid name, including its numeric part
+                    
+            #     # If no numeric ID or not a valid ID, return the original slug
+            #     _logger.info(f"No numeric ID to strip for slug '{slug}'")
+            #     return slug
 
             # blog_slug = blog.rsplit('-', 1)[0]  # Remove anything after the last '-'
             # post_slug = post.rsplit('-', 1)[0]  # Remove anything after the last '-'
-            blog_slug = strip_numeric_id(blog)  
-            post_slug = strip_numeric_id(post)
+            # valid_blog_ids = request.env['blog.blog'].search([]).mapped('id')  # List of valid blog IDs
+            # valid_blog_names = request.env['blog.blog'].search([])
+
+            # valid_post_ids = request.env['blog.post'].search([]).mapped('id')  # List of valid post IDs
+            # valid_post_names = request.env['blog.post'].search([])
+            # _logger.info("Listing all valid blogs:")
+            # for b in valid_blog_names:
+            #     _logger.info(f"Blog name: {b.name.replace(" ", "-").lower()}, blog id: {b.id}'")
+            # for bp in valid_post_names:
+            #     _logger.info(f"Blog poat name: {bp.name.replace(" ", "-").lower()}, post id: {bp.id}'")
+            # def sanitize_slug(slug, valid_ids):
+            #     """
+            #     Check if the slug ends with a numeric ID and if the name part matches
+            #     the corresponding name in valid_ids. If so, strip the numeric ID.
+            #     """
+            #     _logger.info(f"Sanitize_slug called with slug='{slug}' and valid_ids='{valid_ids}'")
+            #     if '-' in slug:
+            #         # Split the slug into name and potential numeric ID
+            #         name_part, possible_id = slug.rsplit('-', 1)
+            #         _logger.info(f"Split slug into name_part='{name_part}' and possible_id='{possible_id}'")
+            #         if possible_id.isdigit():
+            #             possible_id = int(possible_id)
+            #             _logger.info(f"Possible numeric ID detected: '{possible_id}'")
+            #             # Check if the ID exists and if the name matches
+            #             if possible_id in valid_ids and name_part.replace('-', ' ').title() in valid_ids[possible_id]:
+            #                 _logger.info(f"Stripping numeric ID '{possible_id}' from slug '{slug}'")
+            #                 return name_part  # Return the name without the numeric ID
+            #     return slug  # Return the original slug if no match or ID
+            def sanitize_slug(slug, valid_ids):
+                """
+                Check if the slug ends with a numeric ID and if the name part matches
+                the corresponding name in valid_ids. If so, strip the numeric ID.
+                Otherwise, leave the slug unchanged.
+                """
+                # _logger.info(f"Sanitize_slug called with slug='{slug}' and valid_ids='{valid_ids}'")
+                
+                if '-' in slug:
+                    # Split the slug into the name part and the potential numeric ID
+                    name_part, possible_id = slug.rsplit('-', 1)
+                    # _logger.info(f"Split slug into name_part='{name_part}' and possible_id='{possible_id}'")
+                    
+                    # Check if the last part is numeric
+                    if possible_id.isdigit():
+                        possible_id = int(possible_id)
+                        # _logger.info(f"Possible numeric ID detected: '{possible_id}'")
+                        
+                        # Validate against the valid IDs
+                        if possible_id in valid_ids:
+                            # _logger.info(f"Numeric ID '{possible_id}' found in valid_ids")
+                            
+                            # Check if the name part matches the corresponding valid ID name
+                            expected_name = valid_ids[possible_id]
+                            title_case_name = name_part.replace('-', ' ').title()
+                            # _logger.info(f"Comparing name_part '{title_case_name}' with expected name '{expected_name}'")
+                            
+                            if title_case_name == expected_name:
+                                # _logger.info(f"Match found! Stripping numeric ID from slug: '{slug}' -> '{name_part}'")
+                                return name_part
+                            else:
+                                _logger.warning(f"Name mismatch! '{title_case_name}' does not match '{expected_name}'. Keeping slug unchanged.")
+                        else:
+                            _logger.warning(f"Numeric ID '{possible_id}' not found in valid_ids. Keeping slug unchanged.")
+                    else:
+                        _logger.info(f"Last part '{possible_id}' is not numeric. Keeping slug unchanged.")
+                else:
+                    _logger.info(f"No '-' found in slug. Keeping slug unchanged.")
+
+                # Return the original slug if no numeric ID to strip
+                _logger.info(f"Returning slug unchanged: '{slug}'")
+                return slug
+
+            # blog_slug = strip_numeric_id(blog, valid_blog_names)  
+            # post_slug = strip_numeric_id(post, valid_post_names)
+            # Sanitize blog and post slugs
+            blog_slug = sanitize_slug(blog, valid_blog_ids)
+            post_slug = sanitize_slug(post, valid_post_ids)
             # _logger.info(f"Sanitized slugs: blog='{blog_slug}', post='{post_slug}'")
 
             all_blogs = request.env['blog.blog'].search([])  # Search for all blogs
