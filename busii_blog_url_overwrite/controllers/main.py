@@ -159,7 +159,7 @@ class CustomWebsiteBlog(WebsiteBlog):
 
             blog_title = blog_slug.replace('-', ' ').title()
             _logger.info(f"Transformed blog slug to name format: '{blog_title}'")
-            blog_record = request.env['blog.blog'].search([('name', '=', blog_title)], limit=1)
+            blog_record = request.env['blog.blog'].search([('name', '=', blog_slug)], limit=1)
             if not blog_record:
                 _logger.warning(f"No Blog found with slug='{blog}'")
                 return request.not_found()
