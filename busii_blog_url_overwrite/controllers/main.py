@@ -1,10 +1,22 @@
 from odoo import http
 from odoo.addons.website_blog.controllers.main import WebsiteBlog
 from odoo.http import request
-from odoo.addons.http_routing.models.ir_http import slug
+from odoo.addons.http_routing.models.ir_http import slug, unslug
 from odoo.addons.website.controllers.main import QueryURL
 import logging
 _logger = logging.getLogger(__name__)
+
+import werkzeug
+import itertools
+import pytz
+import babel.dates
+from collections import defaultdict
+
+from odoo import http, fields, tools, models
+from odoo.addons.website.controllers.main import QueryURL
+from odoo.tools import html2plaintext
+from odoo.tools.misc import get_lang
+from odoo.tools import sql
 
 class CustomWebsiteBlog(WebsiteBlog):
     @http.route(['/blog/<string:blog>/<string:post>'], type='http', auth="public", website=True)
@@ -16,6 +28,7 @@ class CustomWebsiteBlog(WebsiteBlog):
         _logger.info(f"Received request for blog post: blog='{blog}', post='{post}")
         
         try:
+
             # Fetch all valid blogs and posts
             valid_blogs = request.env['blog.blog'].search([])
             valid_blog_posts = request.env['blog.post'].search([])
@@ -27,107 +40,35 @@ class CustomWebsiteBlog(WebsiteBlog):
             _logger.info(f"Valid blogs: {[f'{k}: {v}' for k, v in valid_blog_ids.items()]}")
             _logger.info(f"Valid posts: {[f'{k}: {v}' for k, v in valid_post_ids.items()]}")
 
-            # def strip_numeric_id(slug):
-            #     parts = slug.rsplit('-', 1)
-            #     # Check if the last part is a number (indicating an ID)
-            #     if len(parts) > 1 and parts[-1].isdigit():
-            #         _logger.info(f"Detected numeric ID in slug '{slug}', stripping it out.")
-            #         return parts[0]  # Return slug without numeric ID
-            #     else:
-            #         _logger.info(f"No numeric ID detected in slug '{slug}', keeping as is.")
-            #         return slug 
-            # def strip_numeric_id(slug, valid_names):
-            #     """
-            #     Strip numeric IDs only if they match the known IDs for old URLs.
-            #     Otherwise, keep the slug as is.
-            #     """
-            #     # if '-' in slug:
-            #     #     parts = slug.rsplit('-', 1)
-            #     #     if parts[-1].isdigit():
-            #     #         numeric_id = int(parts[-1])
-            #     #         # Check if the numeric ID exists in the list of valid IDs
-            #     #         if numeric_id in valid_ids:
-            #     #             _logger.info(f"Stripping numeric ID '{numeric_id}' from slug '{slug}'")
-            #     #             return parts[0]  # Remove the numeric ID
-            #     # # If no numeric ID or not a valid ID, return the original slug
-            #     # _logger.info(f"No numeric ID to strip for slug '{slug}'")
-            #     # return slug
-            #     if '-' in slug:
-            #         parts = slug.rsplit('-', 1)
-            #         if parts[-1].isdigit():
-            #             numeric_id = int(parts[-1])
-            #             # Check if the numeric ID exists in the list of valid IDs
-            #             if slug in valid_names:
-            #                 _logger.info(f"Slug '{slug}' matches a valid name, keeping as is")
-            #                 return slug
-            #             if numeric_id in valid_ids:
-            #                 _logger.info(f"Stripping numeric ID '{numeric_id}' from slug '{slug}'")
-            #                 return parts[0]  # Remove the numeric ID
-            #         # Check if the slug matches a valid name, including its numeric part
-                    
-            #     # If no numeric ID or not a valid ID, return the original slug
-            #     _logger.info(f"No numeric ID to strip for slug '{slug}'")
-            #     return slug
-
-            # blog_slug = blog.rsplit('-', 1)[0]  # Remove anything after the last '-'
-            # post_slug = post.rsplit('-', 1)[0]  # Remove anything after the last '-'
-            # valid_blog_ids = request.env['blog.blog'].search([]).mapped('id')  # List of valid blog IDs
-            # valid_blog_names = request.env['blog.blog'].search([])
-
-            # valid_post_ids = request.env['blog.post'].search([]).mapped('id')  # List of valid post IDs
-            # valid_post_names = request.env['blog.post'].search([])
-            # _logger.info("Listing all valid blogs:")
-            # for b in valid_blog_names:
-            #     _logger.info(f"Blog name: {b.name.replace(" ", "-").lower()}, blog id: {b.id}'")
-            # for bp in valid_post_names:
-            #     _logger.info(f"Blog poat name: {bp.name.replace(" ", "-").lower()}, post id: {bp.id}'")
-            # def sanitize_slug(slug, valid_ids):
-            #     """
-            #     Check if the slug ends with a numeric ID and if the name part matches
-            #     the corresponding name in valid_ids. If so, strip the numeric ID.
-            #     """
-            #     _logger.info(f"Sanitize_slug called with slug='{slug}' and valid_ids='{valid_ids}'")
-            #     if '-' in slug:
-            #         # Split the slug into name and potential numeric ID
-            #         name_part, possible_id = slug.rsplit('-', 1)
-            #         _logger.info(f"Split slug into name_part='{name_part}' and possible_id='{possible_id}'")
-            #         if possible_id.isdigit():
-            #             possible_id = int(possible_id)
-            #             _logger.info(f"Possible numeric ID detected: '{possible_id}'")
-            #             # Check if the ID exists and if the name matches
-            #             if possible_id in valid_ids and name_part.replace('-', ' ').title() in valid_ids[possible_id]:
-            #                 _logger.info(f"Stripping numeric ID '{possible_id}' from slug '{slug}'")
-            #                 return name_part  # Return the name without the numeric ID
-            #     return slug  # Return the original slug if no match or ID
             def sanitize_slug(slug, valid_ids):
                 """
                 Check if the slug ends with a numeric ID and if the name part matches
                 the corresponding name in valid_ids. If so, strip the numeric ID.
                 Otherwise, leave the slug unchanged.
                 """
-                # _logger.info(f"Sanitize_slug called with slug='{slug}' and valid_ids='{valid_ids}'")
+                _logger.info(f"Sanitize_slug called with slug='{slug}' and valid_ids='{valid_ids}'")
                 
                 if '-' in slug:
                     # Split the slug into the name part and the potential numeric ID
                     name_part, possible_id = slug.rsplit('-', 1)
-                    # _logger.info(f"Split slug into name_part='{name_part}' and possible_id='{possible_id}'")
+                    _logger.info(f"Split slug into name_part='{name_part}' and possible_id='{possible_id}'")
                     
                     # Check if the last part is numeric
                     if possible_id.isdigit():
                         possible_id = int(possible_id)
-                        # _logger.info(f"Possible numeric ID detected: '{possible_id}'")
+                        _logger.info(f"Possible numeric ID detected: '{possible_id}'")
                         
                         # Validate against the valid IDs
                         if possible_id in valid_ids:
-                            # _logger.info(f"Numeric ID '{possible_id}' found in valid_ids")
+                            _logger.info(f"Numeric ID '{possible_id}' found in valid_ids")
                             
                             # Check if the name part matches the corresponding valid ID name
                             expected_name = valid_ids[possible_id]
                             title_case_name = name_part.replace('-', ' ').title()
-                            # _logger.info(f"Comparing name_part '{title_case_name}' with expected name '{expected_name}'")
-                            
+                            _logger.info(f"Comparing name_part '{title_case_name}' with expected name '{expected_name}'")
+                    
                             if title_case_name == expected_name:
-                                # _logger.info(f"Match found! Stripping numeric ID from slug: '{slug}' -> '{name_part}'")
+                                _logger.info(f"Match found! Stripping numeric ID from slug: '{slug}' -> '{name_part}'")
                                 return name_part
                             else:
                                 _logger.warning(f"Name mismatch! '{title_case_name}' does not match '{expected_name}'. Keeping slug unchanged.")
@@ -142,40 +83,35 @@ class CustomWebsiteBlog(WebsiteBlog):
                 _logger.info(f"Returning slug unchanged: '{slug}'")
                 return slug
 
-            # blog_slug = strip_numeric_id(blog, valid_blog_names)  
-            # post_slug = strip_numeric_id(post, valid_post_names)
             # Sanitize blog and post slugs
             blog_slug = sanitize_slug(blog, valid_blog_ids)
             post_slug = sanitize_slug(post, valid_post_ids)
-            # _logger.info(f"Sanitized slugs: blog='{blog_slug}', post='{post_slug}'")
+            _logger.info(f"Sanitized slugs: blog='{blog_slug}', post='{post_slug}'")
 
             all_blogs = request.env['blog.blog'].search([])  # Search for all blogs
             all_blog_posts = request.env['blog.post'].search([])
-            # _logger.info("Listing all blogs:")
-            # for b in all_blogs:
-            #     _logger.info(f"Blog ID={b.id}, Name='{b.name}', Slug='{b.slug if hasattr(b, 'slug') else 'N/A'}'")
-            # for bp in all_blog_posts:
-            #     _logger.info(f"Blog ID={bp.id}, Name='{bp.name}', Slug='{bp.slug if hasattr(bp, 'slug') else 'N/A'}'")
+            _logger.info("Listing all blogs:")
+            for b in all_blogs:
+                _logger.info(f"Blog ID={b.id}, Name='{b.name}', Slug='{b.slug if hasattr(b, 'slug') else 'N/A'}'")
+            for bp in all_blog_posts:
+                _logger.info(f"Blog ID={bp.id}, Name='{bp.name}', Slug='{bp.slug if hasattr(bp, 'slug') else 'N/A'}'")
 
-            blog_title = blog_slug.replace('-', ' ').title()
-            # _logger.info(f"Transformed blog slug to name format: '{blog_title}'")
-            blog_record = request.env['blog.blog'].search([('name', '=', blog_title)], limit=1)
+            blog_title = blog_slug.replace('-', ' ')
+            _logger.info(f"Transformed blog slug to name format: '{blog_title}'")
+            blog_record = request.env['blog.blog'].search([('name', 'ilike', blog_slug)], limit=1)
             if not blog_record:
                 _logger.warning(f"No Blog found with slug='{blog}'")
                 return request.not_found()
             
-            # _logger.info(f"Found blog: ID={blog_record.id}, Name='{blog_record.name}', Slug='{blog_record.name}'")
+            _logger.info(f"Found blog: ID={blog_record.id}, Name='{blog_record.name}', Slug='{blog_record.name}'")
 
-            post_name = post_slug.replace('-', ' ').title()  # Convert 'sierra-tarahumara' to 'Sierra Tarahumara'
-            # _logger.info(f"Transformed post slug to name format: '{post_name}'")
+            post_name = post_slug.replace('-', ' ')  # Convert 'sierra-tarahumara' to 'Sierra Tarahumara'
+            _logger.info(f"Transformed post slug to name format: '{post_name}'")
 
             BlogPost = request.env['blog.post']
             date_begin, date_end = kwargs.get('date_begin'), kwargs.get('date_end')
            
-            # _logger.info(f"checking blogs.....{BlogPost.name}")
-
-            # search_criteria = [('blog_id.name', '=', blog), ('name', '=', post)]
-            # _logger.info(f"Searching for blog post with criteria: {search_criteria}")
+            _logger.info(f"checking blogs.....{BlogPost.name}")
             
             # Search for the blog post using the slugs
             blog_post = BlogPost.search([
@@ -195,8 +131,8 @@ class CustomWebsiteBlog(WebsiteBlog):
                 tag = request.env['blog.tag'].browse(int(tag_id))
 
             blog_url = QueryURL('', ['blog', 'tag'], blog=blog_post.blog_id, tag=tag, date_begin=None, date_end=None)
-            # _logger.info(f"Generated blog URL: {blog_url}")
-            # _logger.info(f"Rendering page for BlogPost ID={blog_post.id}, Title='{blog_post.name}'")
+            _logger.info(f"Generated blog URL: {blog_url}")
+            _logger.info(f"Rendering page for BlogPost ID={blog_post.id}, Title='{blog_post.name}'")
             # Render the blog post page with the found post
             return request.render("website_blog.blog_post_complete", {
                 'tag': tag,
@@ -211,3 +147,298 @@ class CustomWebsiteBlog(WebsiteBlog):
             # Log any exception that occurs during request handling
             _logger.error(f"Error rendering blog post page for blog='{blog}', post='{post}': {str(e)}")
             return request.not_found()
+    
+
+    @http.route([
+    '/blog',
+    '/blog/page/<int:page>',
+    '/blog/tag/<string:tag>',
+    '/blog/tag/<string:tag>/page/<int:page>',
+    '''/blog/<string:blog>''',
+    '''/blog/<string:blog>/page/<int:page>''',
+    '''/blog/<string:blog>/tag/<string:tag>''',
+    '''/blog/<string:blog>/tag/<string:tag>/page/<int:page>''',
+    ], type='http', auth="public", website=True, sitemap=True)
+    def blog(self, blog=None, tag=None, page=1, search=None, **opt):
+        """
+        Render the blog page using the new URL format.
+        """
+        _logger.info(f"Received request for blog: blog='{blog}'")
+
+        date_begin, date_end = opt.get('date_begin'), opt.get('date_end')
+
+        try:
+            # Fetch all valid blogs
+            valid_blogs = request.env['blog.blog'].search([])
+            Blog = request.env['blog.blog']
+            blogs = tools.lazy(lambda: Blog.search(request.website.website_domain(), order="create_date asc, id asc"))
+
+            # Create a dictionary of valid blog names mapped to their IDs
+            valid_blog_ids = {blog_record.id: blog_record.name for blog_record in valid_blogs}
+
+            _logger.info(f"Valid blogs: {[f'{k}: {v}' for k, v in valid_blog_ids.items()]}")
+
+            # Sanitize blog slug only if provided
+            blog_slug = None
+            blog_record = None
+            
+            if blog:
+                blog_slug = self.sanitize_slug(blog, valid_blog_ids)
+                _logger.info(f"Sanitized slug for blog='{blog_slug}'")
+
+                # Search for the blog using the slug
+                blog_record = request.env['blog.blog'].search([('name', 'ilike', blog_slug)], limit=1)
+                if not blog_record:
+                    _logger.warning(f"No Blog found with slug='{blog}'")
+                    return request.not_found()
+                _logger.info(f"Found blog: ID={blog_record.id}, Name='{blog_record.name}'")
+
+            # Prepare the QueryURL for navigation links
+            blog_url = QueryURL('', ['blog', 'tag'], blog=blog_record, tag=tag, date_begin=date_begin, date_end=date_end)
+
+            # Get blog posts related to the blog
+            BlogPost = request.env['blog.post']
+            domain = []
+            if blog_record:
+                domain.append(('blog_id', '=', blog_record.id))
+            if tag:
+                domain.append(('tag_ids', 'in', int(tag)))
+            if date_begin and date_end:
+                domain.append(('post_date', '>=', date_begin))
+                domain.append(('post_date', '<=', date_end))
+
+            blog_posts = BlogPost.search(domain, order="post_date desc")
+
+            # Pass the `blog_record` instead of `blog` to `_prepare_blog_values`
+            values = self._prepare_blog_values(
+                blogs=valid_blogs,
+                blog=blog_record,  # Pass the record
+                tags=tag,
+                page=page,
+                search=search,
+                **opt
+            )
+
+            values['blog_url'] = QueryURL(
+                '/blog', ['blog', 'tag'], blog=blog_record, tag=tag, date_begin=date_begin, date_end=date_end, search=search
+            )
+
+            # Render the blog page
+            return request.render("website_blog.blog_post_short", values)
+
+        except Exception as e:
+            _logger.error(f"Error rendering blog for blog='{blog}': {str(e)}")
+            return request.not_found()
+
+
+        # try:
+        #     # Fetch all valid blogs
+        #     valid_blogs = request.env['blog.blog'].search([])
+        #     Blog = request.env['blog.blog']
+        #     blogs = tools.lazy(lambda: Blog.search(request.website.website_domain(), order="create_date asc, id asc"))
+
+        #     # Create a dictionary of valid blog names mapped to their IDs
+        #     valid_blog_ids = {blog_record.id: blog_record.name for blog_record in valid_blogs}
+
+        #     _logger.info(f"Valid blogs: {[f'{k}: {v}' for k, v in valid_blog_ids.items()]}")
+
+        #     # Sanitize blog slug only if provided
+        #     blog_slug = None
+        #     if blog:
+        #         blog_slug = self.sanitize_slug(blog, valid_blog_ids)
+        #         _logger.info(f"Sanitized slug for blog='{blog_slug}'")
+
+        #     # Search for the blog using the slug (if provided)
+        #     blog_record = None
+        #     if blog_slug:
+        #         blog_record = request.env['blog.blog'].search([('name', 'ilike', blog_slug)], limit=1)
+        #         if not blog_record:
+        #             _logger.warning(f"No Blog found with slug='{blog}'")
+        #             return request.not_found()
+        #         _logger.info(f"Found blog: ID={blog_record.id}, Name='{blog_record.name}'")
+
+        #     # Prepare the QueryURL for navigation links
+        #     blog_url = QueryURL('', ['blog', 'tag'], blog=blog_record, tag=tag, date_begin=date_begin, date_end=date_end)
+
+        #     # Get blog posts related to the blog
+        #     BlogPost = request.env['blog.post']
+        #     domain = []
+        #     if blog_record:
+        #         domain.append(('blog_id.id', '=', blog_record.id))
+        #     if tag:
+        #         domain.append(('tag_ids', 'in', int(tag)))
+        #     if date_begin and date_end:
+        #         domain.append(('post_date', '>=', date_begin))
+        #         domain.append(('post_date', '<=', date_end))
+
+        #     blog_posts = BlogPost.search(domain, order="post_date desc")
+
+        #     values = self._prepare_blog_values(blogs=valid_blogs, blog=blog, tags=tag, page=page, search=search, **opt)
+
+        #     values['blog_url'] = QueryURL('/blog', ['blog', 'tag'], blog=blog, tag=tag, date_begin=date_begin, date_end=date_end, search=search) 
+
+        #     # Render the blog page
+        #     return request.render("website_blog.blog_post_short", values)
+
+
+        # except Exception as e:
+        #     _logger.error(f"Error rendering blog for blog='{blog}': {str(e)}")
+        #     return request.not_found()
+
+    def sanitize_slug(self, slug, valid_ids):
+        """
+        Check if the slug ends with a numeric ID and if the name part matches
+        the corresponding name in valid_ids. If so, strip the numeric ID.
+        Otherwise, leave the slug unchanged.
+        """
+        if not slug:
+            return None  # Handle None slug gracefully
+
+        _logger.info(f"Sanitize_slug called with slug='{slug}' and valid_ids='{valid_ids}'")
+
+        if '-' in slug:
+            # Split the slug into the name part and the potential numeric ID
+            name_part, possible_id = slug.rsplit('-', 1)
+            _logger.info(f"Split slug into name_part='{name_part}' and possible_id='{possible_id}'")
+
+            # Check if the last part is numeric
+            if possible_id.isdigit():
+                possible_id = int(possible_id)
+                _logger.info(f"Possible numeric ID detected: '{possible_id}'")
+
+                # Validate against the valid IDs
+                if possible_id in valid_ids:
+                    _logger.info(f"Numeric ID '{possible_id}' found in valid_ids")
+
+                    # Check if the name part matches the corresponding valid ID name
+                    expected_name = valid_ids[possible_id]
+                    title_case_name = name_part.replace('-', ' ').title()
+                    _logger.info(f"Comparing name_part '{title_case_name}' with expected name '{expected_name}'")
+
+                    if title_case_name == expected_name:
+                        _logger.info(f"Match found! Stripping numeric ID from slug: '{slug}' -> '{name_part}'")
+                        return name_part
+                    else:
+                        _logger.warning(f"Name mismatch! '{title_case_name}' does not match '{expected_name}'. Keeping slug unchanged.")
+                else:
+                    _logger.warning(f"Numeric ID '{possible_id}' not found in valid_ids. Keeping slug unchanged.")
+            else:
+                _logger.info(f"Last part '{possible_id}' is not numeric. Keeping slug unchanged.")
+        else:
+            _logger.info(f"No '-' found in slug. Keeping slug unchanged.")
+
+        # Return the original slug if no numeric ID to strip
+        _logger.info(f"Returning slug unchanged: '{slug}'")
+        return slug
+
+
+
+
+
+
+    # @http.route([
+    #     '/blog',
+    #     '/blog/page/<int:page>',
+    #     '/blog/tag/<string:tag>',
+    #     '/blog/tag/<string:tag>/page/<int:page>',
+    #     '''/blog/<string:blog>''',
+    #     '''/blog/<string:blog>/page/<int:page>''',
+    #     '''/blog/<string:blog>/tag/<string:tag>''',
+    #     '''/blog/<string:blog>/tag/<string:tag>/page/<int:page>''',
+    # ],  type='http', auth="public", website=True, sitemap=True)
+    # def blog(self, blog=None, tag=None, date_begin=None, date_end=None, **kwargs):
+    #     """
+    #     Render the blog page using the new URL format.
+    #     """
+    #     _logger.info(f"Received request for blog: blog='{blog}'")
+
+    #     try:
+    #         # Fetch all valid blogs
+    #         valid_blogs = request.env['blog.blog'].search([])
+
+    #         # Create a dictionary of valid blog names mapped to their IDs
+    #         valid_blog_ids = {blog_record.id: blog_record.name for blog_record in valid_blogs}
+
+    #         _logger.info(f"Valid blogs: {[f'{k}: {v}' for k, v in valid_blog_ids.items()]}")
+
+    #         def sanitize_slug(slug, valid_ids):
+    #             """
+    #             Check if the slug ends with a numeric ID and if the name part matches
+    #             the corresponding name in valid_ids. If so, strip the numeric ID.
+    #             Otherwise, leave the slug unchanged.
+    #             """
+    #             _logger.info(f"Sanitize_slug called with slug='{slug}' and valid_ids='{valid_ids}'")
+
+    #             if '-' in slug:
+    #                 # Split the slug into the name part and the potential numeric ID
+    #                 name_part, possible_id = slug.rsplit('-', 1)
+    #                 _logger.info(f"Split slug into name_part='{name_part}' and possible_id='{possible_id}'")
+
+    #                 # Check if the last part is numeric
+    #                 if possible_id.isdigit():
+    #                     possible_id = int(possible_id)
+    #                     _logger.info(f"Possible numeric ID detected: '{possible_id}'")
+
+    #                     # Validate against the valid IDs
+    #                     if possible_id in valid_ids:
+    #                         _logger.info(f"Numeric ID '{possible_id}' found in valid_ids")
+
+    #                         # Check if the name part matches the corresponding valid ID name
+    #                         expected_name = valid_ids[possible_id]
+    #                         title_case_name = name_part.replace('-', ' ').title()
+    #                         _logger.info(f"Comparing name_part '{title_case_name}' with expected name '{expected_name}'")
+
+    #                         if title_case_name == expected_name:
+    #                             _logger.info(f"Match found! Stripping numeric ID from slug: '{slug}' -> '{name_part}'")
+    #                             return name_part
+    #                         else:
+    #                             _logger.warning(f"Name mismatch! '{title_case_name}' does not match '{expected_name}'. Keeping slug unchanged.")
+    #                     else:
+    #                         _logger.warning(f"Numeric ID '{possible_id}' not found in valid_ids. Keeping slug unchanged.")
+    #                 else:
+    #                     _logger.info(f"Last part '{possible_id}' is not numeric. Keeping slug unchanged.")
+    #             else:
+    #                 _logger.info(f"No '-' found in slug. Keeping slug unchanged.")
+
+    #             # Return the original slug if no numeric ID to strip
+    #             _logger.info(f"Returning slug unchanged: '{slug}'")
+    #             return slug
+
+    #         # Sanitize blog slug
+    #         blog_slug = sanitize_slug(blog, valid_blog_ids)
+    #         _logger.info(f"Sanitized slug for blog='{blog_slug}'")
+
+    #         # Search for the blog using the slug
+    #         blog_record = request.env['blog.blog'].search([('name', 'ilike', blog_slug)], limit=1)
+    #         if not blog_record:
+    #             _logger.warning(f"No Blog found with slug='{blog}'")
+    #             return request.not_found()
+
+    #         _logger.info(f"Found blog: ID={blog_record.id}, Name='{blog_record.name}'")
+
+    #         # Prepare the QueryURL for navigation links
+    #         blog_url = QueryURL('', ['blog', 'tag'], blog=blog_record, tag=tag, date_begin=date_begin, date_end=date_end)
+
+    #         # Get blog posts related to the blog
+    #         BlogPost = request.env['blog.post']
+    #         domain = [('blog_id', '=', blog_record.id)]
+    #         if tag:
+    #             domain.append(('tag_ids', 'in', int(tag)))
+    #         if date_begin and date_end:
+    #             domain.append(('post_date', '>=', date_begin))
+    #             domain.append(('post_date', '<=', date_end))
+
+    #         blog_posts = BlogPost.search(domain, order="post_date desc")
+
+    #         # Render the blog page
+    #         return request.render("website_blog.blog_post_complete", {
+    #             'blog': blog_record,
+    #             'blogs': valid_blogs,
+    #             'blog_posts': blog_posts,
+    #             'blog_url': blog_url,
+    #             'tag': tag,
+    #         })
+
+    #     except Exception as e:
+    #         _logger.error(f"Error rendering blog page for blog='{blog}': {str(e)}")
+    #         return request.not_found()
