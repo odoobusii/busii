@@ -1,0 +1,17 @@
+.o_gantt_task_subtask_indicator {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #007bff;
+    z-index: 10;
+}
+
+.o_gantt_task_subtask_indicator .fa {
+    font-size: 16px;
+}
+
+.o_gantt_task_subtask_indicator:hover {
+    color: #0056b3;
+}
