@@ -140,7 +140,7 @@ class SimpleGantt(models.Model):
 
     @api.model
     def create(self, values):
-        task = super(ProjectTask, self).create(values)
+        task = super(SimpleGantt, self).create(values)
         # Ensure dependencies are set up after task creation
         if task.depends_on_task_ids:
             task._update_dependencies()
@@ -157,5 +157,5 @@ class SimpleGantt(models.Model):
         """ Ensure dependencies are removed when deleting a task. """
         for task in self:
             task.dependent_task_ids.write({'depends_on_task_ids': [(3, task.id)]})
-        return super(ProjectTask, self).unlink()
+        return super(SimpleGantt, self).unlink()
 
