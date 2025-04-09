@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Overwrite BlogPost URL',
-    'version': '17.0.0.1',
+    'version': '18.0.0.1',
     'license': 'LGPL-3',
     "author": "busii",
     "website": "https://www.busii.com/",
