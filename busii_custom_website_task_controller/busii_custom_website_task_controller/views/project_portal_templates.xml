@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+
+    <template id="custom_portal_tasks_list_inherit" inherit_id="project.portal_tasks_list" name="Portal: My Tasks">
+
+        <xpath expr="//t[@t-foreach='tasks']/tr" position="before">
+            <td>
+                <span t-set="planned_date_begin" t-value="task.sudo().planned_date_begin"/>
+            </td>
+            <td>
+                <span t-set="date_end" t-value="task.sudo().date_end"/>
+            </td>
+            <td>
+                <span t-set="depend_on_ids" t-value="task.sudo().depend_on_ids"/>
+            </td>
+        </xpath>
+        <xpath expr="//thead/tr/th[@name='project_portal_milestones']" position="after">
+            <th class="text-center">Date start</th>
+            <th class="text-center">Date end</th>
+            <th class="text-center">Blocked By</th>
+        </xpath>
+
+        <xpath expr="//t[@t-foreach='tasks']/tr/td//span[@t-esc='task.id']" position="replace">
+            <!-- <span t-esc="task.sudo().sale_order_id.name"/> -->
+            <a t-attf-href="/my/orders/#{task.sale_order_id.id}?{{ keep_query() }}">
+                            <span t-esc="task.sale_order_id.name[:18] + ' ...' if task.sale_order_id.name and len(task.sale_order_id.name) &gt; 18 else task.sale_order_id.name"/>
+                        </a>
+        </xpath>
+
+        <xpath expr="//tbody/t/tr/td[@name='project_portal_milestones']" position="after">
+            <td>
+                <t t-esc="planned_date_begin" t-options='{"widget": "date"}'/>
+            </td>
+            <td>
+                <t t-esc="date_end" t-options='{"widget": "date"}'/>
+            </td>
+            <td class="text-end">
+                <t t-set="depend_on_ids" t-value="task.sudo().depend_on_ids"/>
+                <div t-if="depend_on_ids" class="row flex-wrap ps-3"
+                     t-att-title="'\n'.join(depend_on_ids.mapped('name'))">
+                    <t t-foreach="depend_on_ids" t-as="task">
+                        <a t-attf-href="/my/#{task_url}/#{task.id}?{{ keep_query() }}">
+                            <span t-esc="task.name[:18] + ' ...' if task.name and len(task.name) &gt; 18 else task.name"/>
+                        </a>
+                        <br/>
+                    </t>
+                </div>
+            </td>
+        </xpath>
+    </template>
+
+
+    <template id="custom_portal_my_task"
+              inherit_id="project.portal_my_task"
+              name="Portal: My Task with depends on tasks">
+        <xpath expr="//li[@id='nav-header']" position="after">
+            <li t-if="task.depend_on_ids" class="nav-item">
+                <a class="nav-link ps-3" href="#task_depend_on_task_ids">
+                    Depends on tasks
+                </a>
+            </li>
+        </xpath>
+        <xpath expr="//div[@id='card_body']" position="inside">
+            <div class="container" t-if="task.depend_on_ids">
+                <hr class="mt-4 mb-1"/>
+                <h5 id="task_depend_on_task_ids" class="mt-2 mb-2" data-anchor="true">Blocked By tasks</h5>
+                <t t-call="busii_custom_website_task_controller.portal_depends_on_table">
+                <t t-set="task_url" t-value="task_url if task_url else 'tasks'"/>
+                
+                </t>
+            </div>
+        </xpath>
+    </template>
+
+    <template id="portal_depends_on_table" name="Portal Blocked by Table">
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Date deadline</th>
+                    <th>Date start</th>
+                    <th>Date end</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tr t-foreach="task.depend_on_ids" t-as="task_depend_on_task_ids">
+                <td>
+                    <t t-esc="task.date_end" t-options='{"widget": "date"}'/>
+                </td>
+                <td>
+                    <t t-esc="task.sudo().planned_date_begin" t-options='{"widget": "date"}'/>
+                </td>
+                <td>
+                    <t t-esc="task.sudo().date_end" t-options='{"widget": "date"}'/>
+                </td>
+                <td>
+                    <a t-attf-href="/my/#{task_url}/#{task_depend_on_task_ids.id}?{{ keep_query() }}">
+                        <span t-esc="task_depend_on_task_ids.name[:60] + ' ...' if task_depend_on_task_ids.name and len(task_depend_on_task_ids.name) &gt; 60 else task_depend_on_task_ids.name"/>
+                    </a>
+                </td>
+            </tr>
+        </table>
+    </template>
+
+
+</odoo>
