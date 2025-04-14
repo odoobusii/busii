@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields
-from odoo.addons.http_routing.models.ir_http import slug
+# from odoo.addons.http_routing.models.ir_http import slug
 from odoo.addons.website_blog.models.website_blog import BlogPost
 import logging
 _logger = logging.getLogger(__name__)
@@ -17,8 +17,11 @@ class BlogPostUrl(BlogPost):
         for post in self:
             try:
                 # Use the name as a fallback if `slug` is unavailable
-                blog_slug = post.blog_id.slug if hasattr(post.blog_id, 'slug') else post.blog_id.name
-                post_slug = post.slug if hasattr(post.blog_id, 'slug') else post.name  # Get the post's slug
+                # blog_slug = post.blog_id.slug if hasattr(post.blog_id, 'slug') else post.blog_id.name
+                # post_slug = post.slug if hasattr(post.blog_id, 'slug') else post.name  # Get the post's slug
+                blog_slug = post.blog_id.name
+                post_slug = post.name  # Get the post's slug
+
 
                 # Ensure no spaces and lowercase for URLs
                 blog_slug = blog_slug.replace(" ", "-").lower()

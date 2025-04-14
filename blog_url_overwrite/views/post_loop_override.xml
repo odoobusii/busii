@@ -37,13 +37,13 @@
     </xpath>
     </template>
 
-    <template id="opt_blog_cover_post_custom" inherit_id="website_blog.opt_blog_cover_post">
-        <!-- Replace the href attributes for the blog post links -->
+    <!-- <template id="opt_blog_cover_post_custom" inherit_id="website_blog.opt_blog_cover_post">
+       
         <xpath expr="//a[contains(@t-attf-href, '/blog/#{slug(first_post.blog_id)}/#{slug(first_post)}')]" position="attributes">
-            <!-- Use the custom URL logic to generate the correct URL -->
+   
             <attribute name="t-attf-href">/blog/#{first_post.blog_id.name.replace(" ", "-").lower()}/#{first_post.name.replace(" ", "-").lower()}</attribute>
         </xpath>
-    </template>
+    </template> -->
 
     <template id="opt_blog_post_comment_custom" inherit_id="website_blog.opt_blog_post_comment">
         <!-- Replace the href attributes for the blog post links -->
