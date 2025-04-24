@@ -1,0 +1,105 @@
+<odoo>
+    <data>
+      <template id="custom_report_Invoice" inherit_id="account.report_invoice_document">
+      
+        <xpath expr="//div[@name='address_not_same_as_shipping']//div[1]" position="replace">
+          <t t-set="address">
+            <address class="mb-0">
+                <div t-field="o.partner_id"
+                     t-options='{"widget": "contact", "fields": ["address", "name"], "no_marker": True}'/>
+                <t t-if="o.partner_id.vat">
+                    <div>
+                        <t t-if="o.company_id.account_fiscal_country_id.vat_label" t-out="o.company_id.account_fiscal_country_id.vat_label"/>
+                        <t t-else="">Vat no.</t>: <span t-field="o.partner_id.vat"/>
+                    </div>
+                </t>
+            </address>
+        </t>
+        </xpath>
+
+        
+        <xpath expr="//div[@name='address_same_as_shipping']//t[@t-set='address']" position="replace">
+           <t t-set="address">
+            <address class="mb-0">
+                <div t-field="o.partner_id"
+                     t-options='{"widget": "contact", "fields": ["address", "name"], "no_marker": True}'/>
+                <t t-if="o.partner_id.vat">
+                    <div>
+                        <t t-if="o.company_id.account_fiscal_country_id.vat_label" t-out="o.company_id.account_fiscal_country_id.vat_label"/>
+                        <t t-else="">Vat no.</t>: <span t-field="o.partner_id.vat"/>
+                    </div>
+                </t>
+            </address>
+        </t>
+        </xpath>
+
+
+        <xpath expr="//div[@name='no_shipping']//div[1]" position="replace">
+        <t t-set="address">
+            <address class="mb-0">
+                <div t-field="o.partner_id"
+                     t-options='{"widget": "contact", "fields": ["address", "name"], "no_marker": True}'/>
+                <t t-if="o.partner_id.vat">
+                    <div>
+                        <t t-if="o.company_id.account_fiscal_country_id.vat_label" t-out="o.company_id.account_fiscal_country_id.vat_label"/>
+                        <t t-else="">Vat no.</t>: <span t-field="o.partner_id.vat"/>
+                    </div>
+                </t>
+            </address>
+        </t>
+        </xpath>
+
+
+
+        
+        <xpath expr="//div[@id='payment_term']" position="attributes">
+            <attribute name="class">clearfix</attribute>
+        </xpath>
+
+        <xpath expr="//span[@name='payment_term']" position="replace">
+          <br></br>
+
+            <section class="mt-4">
+            <br></br><br></br><br></br><br></br><br></br>
+                <p>
+               </p>
+               <p>
+               </p>
+            </section>
+        </xpath>
+        <xpath expr="//p[@name='payment_communication']" position="replace">
+            <div class="row mb-4">
+                <div class="col-12">
+                    <p name="payment_communication" style="white-space: normal; margin: 0;">
+                        Please use the following reference for your payment:
+                        <span t-field="o.payment_reference" class="fw-bold" style="white-space: nowrap;" />
+                        <t t-if="o.partner_bank_id">
+                            on this account: <span t-field="o.partner_bank_id" class="fw-bold"/>
+                        </t>
+                    </p>
+                </div>
+            </div>
+        </xpath>
+        <!-- <xpath expr="//p[@name='payment_communication']" position="replace">
+            <div class="row mb-4">
+                <div class="col-12" style="white-space: normal;">
+                    <p name="payment_communication" style="white-space: normal; margin: 0;">
+                        Please use the following reference for your payment:
+                        <span t-field="o.payment_reference" style="font-weight: bold; white-space: nowrap;" />
+                        <t t-if="o.partner_bank_id">
+                            on this account:
+                            <span t-field="o.partner_bank_id" style="font-weight: bold;"/>
+                        </t>
+                    </p>
+                </div>
+            </div>
+        </xpath> -->
+
+        <!-- <xpath expr="//p[@name='payment_communication']" position="replace">
+            <p name="payment_communication">
+                Please use the following reference for your payment: <span class="fw-bold" t-field="o.payment_reference">INV/2023/00001</span>
+            </p>
+        </xpath> -->
+      </template>
+    </data>
+</odoo>
