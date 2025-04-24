@@ -1,2 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_495_invoice_layout_495_invoice_layout,495_invoice_layout.495_invoice_layout,model_495_invoice_layout_495_invoice_layout,base.group_user,1,1,1,1
