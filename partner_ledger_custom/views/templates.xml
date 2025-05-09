@@ -1,0 +1,54 @@
+<odoo>
+    <template id="custom_pdf_export_main" inherit_id="account_reports.pdf_export_main">
+        <xpath expr="//header" position="attributes">
+        <attribute name="style">background-color:rgb(255, 255, 255);</attribute> 
+        </xpath>
+    </template>
+
+    <template id="pdf_export_main_custom_logo" inherit_id="account_reports.pdf_export_main">
+        <xpath expr="//div[@class='col-8']/t[@t-call]" position="before">
+        <img t-if="env.company.logo"
+            t-att-src="image_data_uri(env.company.logo)"
+            style="max-width: 100px; max-height: 100px;"
+            class="float-left" alt="Logo"/>
+        </xpath>
+    </template>
+
+    <template id="pdf_export_filters_custom_change_partners_to_customers" inherit_id="account_reports.pdf_export_filters">  
+        <xpath expr="//div[@class='col-3' and contains(., 'Partners:')]" position="replace">
+        <div class="col-3">Customers:</div>
+        </xpath>
+    </template>
+
+    <template id="pdf_export_main_custom_partner_address" inherit_id="account_reports.pdf_export_filters">
+        <xpath expr="(//div[@class='row'])[2]" position="after">
+            <t t-set="partner_ids" t-value="options.get('partner_ids')"/>
+            <t t-set="partner" t-value="env['res.partner'].browse(partner_ids[0])"/>
+
+            <t t-if="partner">
+                <div class="row" style="margin-top: 10px;">
+                    <div class="col-12 o_text_muted">
+                        <strong>Address for:</strong> <t t-out="partner.name"/>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-12">
+                        <address class="mb-0 o_text_muted"
+                                t-field="partner.commercial_partner_id"
+                                t-options='{"widget": "contact", "fields": ["address"], "no_marker": True}'/>
+                    </div>
+                </div>
+
+                <t t-if="partner.vat">
+                    <div class="row">
+                        <div class="col-12 o_text_muted">
+                        <strong>Tax ID:</strong> <t t-out="partner.vat"/>
+                        <br/>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </xpath>
+    </template>
+</odoo>
