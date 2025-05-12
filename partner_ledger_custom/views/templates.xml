@@ -44,6 +44,7 @@
             <t t-set="partner" t-value="env['res.partner'].browse(partner_ids[0])"/>
 
             <t t-if="partner">
+                <br/>
                 <div class="row" style="margin-top: 10px;">
                     <div class="col-12">
                         <t t-out="partner.name"/>
