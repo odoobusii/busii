@@ -1,0 +1,74 @@
+<odoo>
+    <template id="custom_pdf_export_main" inherit_id="account_reports.pdf_export_main">
+        <xpath expr="//header" position="attributes">
+        <attribute name="style">background-color:rgb(255, 255, 255);</attribute> 
+        </xpath>
+    </template>
+
+    <template id="pdf_export_main_custom_logo" inherit_id="account_reports.pdf_export_main">
+        <xpath expr="//div[@class='col-8']/t[@t-call]" position="before">
+        <img t-if="env.company.logo"
+            t-att-src="image_data_uri(env.company.logo)"
+            style="max-width: 100px; max-height: 100px;"
+            class="float-left" alt="Logo"/>
+        </xpath>
+        <xpath expr="//div[@class='col-8']/t[@t-call]" position="replace">
+            <div class="col-8">
+                <t t-call="{{custom_templates.get('company_information_custom', 'partner_ledger_custom.company_information_custom')}}"/>
+            </div>
+        </xpath>
+    </template>
+
+    <template id="company_information_custom">
+        <t t-set="company_names" t-value="[company['name'] for company in options['companies']]"/>
+        <div class="row">
+            <div class="col-10" t-out="', '.join(company_names)"/>
+        </div>
+
+        <address class="mb-0" t-field="env.company.partner_id" t-options='{"widget": "contact", "fields": ["address"], "no_marker": True}'/>
+
+        <t t-if="options.get('tax_unit', 'company_only') == 'company_only'">
+            <t t-if="env.company.account_fiscal_country_id.vat_label" t-out="env.company.account_fiscal_country_id.vat_label+':'"/>
+            <t t-else="">Tax ID:</t>
+            <t t-out="env.company.vat"/>
+        </t>
+        <t t-else="">
+            Tax ID: <t t-out="env['account.tax.unit'].browse(options.get('tax_unit')).vat"/>
+        </t>
+    </template>
+
+
+    <template id="pdf_export_filters_custom_change_partners_to_customers" inherit_id="account_reports.pdf_export_filters">  
+         <xpath expr="(//div[@class='row'])[2]" position="replace">
+            <t t-set="partner_ids" t-value="options.get('partner_ids')"/>
+            <t t-set="partner" t-value="env['res.partner'].browse(partner_ids[0])"/>
+                        <br/>
+                        <br/>
+            <t t-if="partner">
+                
+                <div class="row" style="margin-top: 10px;">
+                    <div class="col-12">
+                        <t t-out="partner.name"/>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-12">
+                        <address class="mb-0 "
+                                t-field="partner.commercial_partner_id"
+                                t-options='{"widget": "contact", "fields": ["address"], "no_marker": True}'/>
+                    </div>
+                </div>
+
+                <t t-if="partner.vat">
+                    <div class="row">
+                        <div class="col-12">
+                        <p>Tax ID: <t t-out="partner.vat"/></p>
+                        <br/>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </xpath>
+    </template>
+</odoo>
