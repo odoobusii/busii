@@ -23,6 +23,6 @@
             'datas/data.xml'
             ],
 
-        'images': ['static/description/banner.gif']
+        'images': ['static/description/banner.gif'] 
 }
 
