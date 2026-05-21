@@ -1,0 +1,11 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_gsheets_config_user,gsheets.config.user,model_gsheets_config,base.group_user,1,0,0,0
+access_gsheets_config_manager,gsheets.config.manager,model_gsheets_config,base.group_system,1,1,1,1
+access_gsheets_mapping_user,gsheets.mapping.user,model_gsheets_mapping,base.group_user,1,0,0,0
+access_gsheets_mapping_manager,gsheets.mapping.manager,model_gsheets_mapping,base.group_system,1,1,1,1
+access_gsheets_field_mapping_user,gsheets.field.mapping.user,model_gsheets_field_mapping,base.group_user,1,0,0,0
+access_gsheets_field_mapping_manager,gsheets.field.mapping.manager,model_gsheets_field_mapping,base.group_system,1,1,1,1
+access_gsheets_sync_user,gsheets.sync.user,model_gsheets_sync,base.group_user,1,0,0,0
+access_gsheets_sync_manager,gsheets.sync.manager,model_gsheets_sync,base.group_system,1,1,1,1
+access_gsheets_sync_log_user,gsheets.sync.log.user,model_gsheets_sync_log,base.group_user,1,0,0,0
+access_gsheets_sync_log_manager,gsheets.sync.log.manager,model_gsheets_sync_log,base.group_system,1,1,1,1

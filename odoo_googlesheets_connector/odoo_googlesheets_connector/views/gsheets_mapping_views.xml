@@ -1,0 +1,368 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        
+        <!-- Google Sheets Mapping Form View -->
+        <record id="view_gsheets_mapping_form" model="ir.ui.view">
+            <field name="name">gsheets.mapping.form</field>
+            <field name="model">gsheets.mapping</field>
+            <field name="arch" type="xml">
+                <form string="Google Sheets Mapping">
+                    <header>
+                        <button name="action_test_mapping" string="Test Mapping" type="object" class="btn-primary"/>
+                        <button name="action_manual_sync" string="Manual Sync" type="object" class="btn-warning" confirm="Are you sure you want to sync this mapping now (regardless of schedule)?" invisible="state != 'active'"/>
+                        <button name="action_preview_data" string="Preview Data" type="object" class="btn-info"/>
+                        <button name="action_apply_template" string="Apply Template" type="object" class="btn-success"/>
+                        <field name="state" widget="statusbar" 
+                               statusbar_visible="draft,active"/>
+                    </header>
+                    
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name" placeholder="e.g., Sales Orders Monthly Export"/>
+                            </h1>
+                        </div>
+                        
+                        <group>
+                            <group string="Configuration">
+                                <field name="config_id" help="Select the Google Sheets configuration to use for this mapping"/>
+                                <field name="active"/>
+                                <field name="sequence" help="Order in which mappings are processed (lower numbers first)"/>
+                            </group>
+                            
+                            <group string="Sync Information">
+                                <field name="last_sync" readonly="1"/>
+                                <field name="records_synced" readonly="1"/>
+                            </group>
+                        </group>
+                        
+                        <notebook>
+                            <page string="Odoo Configuration" name="odoo">
+                                <group>
+                                    <group string="Model Settings">
+                                        <field name="model_id" create="0" edit="0" help="Select the Odoo model to sync data from"/>
+                                        <field name="model_name" invisible="1"/>
+                                        <field name="filter_domain" widget="domain" options="{'model': 'model_name'}" help="Use Odoo domain syntax to filter records. Example: [('state', '=', 'sale')]"/>
+                                        <field name="limit" help="Maximum number of records to sync (recommended: 1000-5000 for performance)"/>
+                                    </group>
+                                    
+                                    <group string="Date Range Filter">
+                                        <field name="use_date_filter" help="Enable to filter records by a specific date range for better performance with large datasets"/>
+                                        <field name="date_field" required="use_date_filter" invisible="not use_date_filter" domain="[('model_id', '=', model_id), ('ttype', 'in', ['date', 'datetime'])]" help="Select the date field to filter on (e.g., create_date, date_order)"/>
+                                        <field name="date_from" invisible="not use_date_filter" help="Start date for filtering (leave empty for no start limit)"/>
+                                        <field name="date_to" invisible="not use_date_filter" help="End date for filtering (leave empty for no end limit)"/>
+                                    </group>
+                                </group>
+                                
+                                <group>
+                                    <group string="Sync Settings">
+                                        <field name="sync_mode" help="Choose how data is synchronized: Append (add new), Replace (clear and rewrite), Update (modify existing)"/>
+                                        <field name="key_field" required="sync_mode == 'update'" domain="[('model_id', '=', model_id)]" help="Field used to match existing records for updates (e.g., name, id, reference)"/>
+                                    </group>
+                                    
+                                    <group string="Error Handling">
+                                        <field name="skip_errors" help="Continue syncing other records if one fails"/>
+                                        <field name="error_action" help="Action to take when a field mapping fails: Skip (ignore), Use Default (fallback value), Raise Error (stop sync)"/>
+                                    </group>
+                                </group>
+                            </page>
+                            
+                            <page string="Google Sheets Configuration" name="gsheets">
+                                <group>
+                                    <group string="Sheet Settings">
+                                        <field name="sheet_name" placeholder="e.g., Sales Data, Product Export" help="Name of the worksheet in Google Sheets (will be created if it doesn't exist)"/>
+                                        <field name="start_row" help="Row number where data starts (1-based). Row 1 is typically for headers."/>
+                                        <field name="start_col" help="Column number where data starts (1-based). Usually 1 for column A."/>
+                                    </group>
+                                    
+                                    <group string="Header Management">
+                                        <field name="include_headers" help="Add column headers to the spreadsheet for better readability"/>
+                                        <field name="header_row" invisible="not include_headers" help="Row number for headers (usually 1)"/>
+                                        <field name="custom_headers" invisible="not include_headers" help="Use custom header names instead of field names"/>
+                                    </group>
+                                </group>
+                            </page>
+                            
+                            <page string="Field Mappings" name="fields">
+                                <p class="text-muted mb-3">
+                                    <strong>Field Mapping Types:</strong>
+                                    <em>Field</em> (direct mapping), <em>Expression</em> (calculations), <em>Computed</em> (complex logic)
+                                </p>
+                                <field name="field_mapping_ids">
+                                    <list editable="bottom">
+                                        <field name="sequence" widget="handle"/>
+                                        <field name="mapping_type" help="Choose how to get the value: Field (direct), Expression (calculated), Computed (complex logic)"/>
+                                        <field name="odoo_field" domain="[('model_id', '=', parent.model_id)]" required="mapping_type == 'field'" invisible="mapping_type != 'field'" help="Select the Odoo field to map"/>
+                                        <field name="custom_expression" required="mapping_type in ['expression', 'computed']" invisible="mapping_type == 'field'" placeholder="e.g., record.partner_id.country_id.name" help="Python expression using 'record' variable. Examples: record.amount_total * 1.21, record.partner_id.name"/>
+                                        <field name="gsheets_column" placeholder="A, B, C..." help="Google Sheets column letter (A, B, C, etc.)"/>
+                                        <field name="custom_header" invisible="not parent.custom_headers" placeholder="e.g., Customer Name, Total Amount" help="Custom name for this column header"/>
+                                        <field name="field_type" help="Data type for proper formatting: Text, Number, Currency, Date, Boolean, Percentage"/>
+                                        <field name="default_value" placeholder="e.g., N/A, 0, Unknown" help="Value to use when field is empty or expression fails"/>
+                                        <field name="is_required" help="Mark as required field (will show validation errors if empty)"/>
+                                    </list>
+                                </field>
+                            </page>
+                            
+                            <page string="Advanced Formatting" name="formatting">
+                                <p class="text-muted mb-3">
+                                    <strong>Formatting Options:</strong> Transform text case, format numbers with currency/percentages, customize date formats, and set boolean values.
+                                </p>
+                                <field name="field_mapping_ids">
+                                    <list editable="bottom">
+                                        <field name="sequence" widget="handle"/>
+                                        <field name="gsheets_column"/>
+                                        <field name="field_type"/>
+                                        
+                                        <!-- Text Formatting -->
+                                        <field name="text_transform" invisible="field_type != 'text'" help="Transform text case: UPPERCASE, lowercase, Title Case, Capitalize First"/>
+                                        
+                                        <!-- Number Formatting -->
+                                        <field name="number_format" invisible="field_type not in ['number', 'currency', 'percentage']" help="Number display format: 1234.56, 1,234.56, $1,234.56, 1.23e+3"/>
+                                        <field name="decimal_places" invisible="field_type not in ['number', 'currency', 'percentage']" help="Number of decimal places to show (0-10)"/>
+                                        <field name="currency_symbol" invisible="field_type != 'currency'" placeholder="$, €, £, ¥" help="Currency symbol to display before numbers"/>
+                                        
+                                        <!-- Date Formatting -->
+                                        <field name="date_format" invisible="field_type not in ['date', 'datetime']" help="Date format: ISO (2024-01-15), US (01/15/2024), EU (15/01/2024), Long (January 15, 2024)"/>
+                                        <field name="custom_date_format" invisible="field_type not in ['date', 'datetime'] or date_format != 'custom'" placeholder="%Y-%m-%d %H:%M:%S" help="Python strftime format. Examples: %Y-%m-%d, %d/%m/%Y, %B %d, %Y"/>
+                                        
+                                        <!-- Boolean Formatting -->
+                                        <field name="true_value" invisible="field_type != 'boolean'" placeholder="Yes, ✓, Active, True" help="Text to display for True values"/>
+                                        <field name="false_value" invisible="field_type != 'boolean'" placeholder="No, ✗, Inactive, False" help="Text to display for False values"/>
+                                    </list>
+                                </field>
+                            </page>
+                            
+                            <page string="Relationship &amp; Conditions" name="advanced">
+                                <p class="text-muted mb-3">
+                                    <strong>Advanced Features:</strong> Control relationship display, add conditional logic, and apply mathematical functions.
+                                </p>
+                                <field name="field_mapping_ids">
+                                    <list editable="bottom">
+                                        <field name="sequence" widget="handle"/>
+                                        <field name="gsheets_column"/>
+                                        
+                                        <!-- Relationship Handling -->
+                                        <field name="relation_display" help="How to display related records: Name, ID, Custom field, or Count"/>
+                                        <field name="relation_field" invisible="relation_display != 'custom'" placeholder="e.g., country_id.name, email" help="Specific field to show from related record (use dot notation for nested fields)"/>
+                                        <field name="relation_separator" placeholder=", | ; | /" help="Separator for multiple related records (many2many fields)"/>
+                                        
+                                        <!-- Conditional Values -->
+                                        <field name="use_condition" help="Enable conditional logic to show different values based on record state"/>
+                                        <field name="condition_expression" invisible="not use_condition" placeholder="record.state == 'sale'" help="Python condition returning True/False. Examples: record.state == 'sale', record.amount_total > 1000"/>
+                                        <field name="condition_true_value" invisible="not use_condition" placeholder="Confirmed" help="Value to show when condition is True"/>
+                                        <field name="condition_false_value" invisible="not use_condition" placeholder="Draft" help="Value to show when condition is False"/>
+                                        
+                                        <!-- Advanced Options -->
+                                        <field name="skip_empty" help="Don't include this field if the value is empty"/>
+                                        <field name="apply_function" help="Apply mathematical function to the field value (useful for aggregations)"/>
+                                    </list>
+                                </field>
+                            </page>
+
+                            <page string="Retries &amp; Notifications" name="retries_notify">
+                                <group>
+                                    <group string="Retry Policy">
+                                        <field name="use_custom_retry"/>
+                                        <field name="retry_limit" invisible="not use_custom_retry" placeholder="Leave 0 to use configuration default"/>
+                                        <field name="retry_count" readonly="1"/>
+                                        <div invisible="use_custom_retry" class="text-muted">
+                                            Using configuration default retry limit
+                                        </div>
+                                    </group>
+                                    
+                                    <group string="Failure Notifications">
+                                        <field name="use_custom_notification"/>
+                                        <field name="notify_on_failure" invisible="not use_custom_notification"/>
+                                        <field name="notify_partner_ids" widget="many2many_tags" options="{'no_create': True}" invisible="not use_custom_notification"/>
+                                        <div invisible="use_custom_notification" class="text-muted">
+                                            Using configuration defaults
+                                        </div>
+                                    </group>
+                                </group>
+                            </page>
+                        </notebook>
+                        
+                        <group string="Error Information">
+                            <field name="error_message" readonly="1"/>
+                        </group>
+                    </sheet>
+                    <chatter/>
+
+                </form>
+            </field>
+        </record>
+
+        <!-- Enhanced Field Mapping Form View -->
+        <record id="view_gsheets_field_mapping_form" model="ir.ui.view">
+            <field name="name">gsheets.field.mapping.form</field>
+            <field name="model">gsheets.field.mapping</field>
+            <field name="arch" type="xml">
+                <form string="Field Mapping">
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="gsheets_column" placeholder="Column (A, B, C...)"/>
+                            </h1>
+                        </div>
+                        
+                        <group>
+                            <group string="Mapping Configuration">
+                                <field name="sequence" help="Display order in the spreadsheet (lower numbers appear first)"/>
+                                <field name="mapping_type" help="Field: Direct field mapping, Expression: Python calculation, Computed: Complex logic"/>
+                                <field name="odoo_field" domain="[('model_id', '=', parent.model_id)]" required="mapping_type == 'field'" invisible="mapping_type != 'field'" help="Select the Odoo field to map directly"/>
+                                <field name="custom_expression" required="mapping_type in ['expression', 'computed']" invisible="mapping_type == 'field'" placeholder="record.partner_id.country_id.name" help="Python expression using 'record' variable. Examples: record.amount_total * 1.21, len(record.order_line)"/>
+                                <field name="custom_header" placeholder="e.g., Customer Country, Total with Tax" help="Custom name for the column header (appears in row 1)"/>
+                            </group>
+                            
+                            <group string="Field Configuration">
+                                <field name="field_type" help="Choose the data type for proper formatting in Google Sheets"/>
+                                <field name="default_value" placeholder="N/A, 0, Unknown" help="Fallback value when the field is empty or expression fails"/>
+                                <field name="is_required" help="Mark as required - will show validation errors if empty"/>
+                                <field name="skip_empty" help="Don't include this column in the output if the value is empty"/>
+                            </group>
+                        </group>
+                        
+                        <notebook>
+                            <page string="Formatting" name="formatting">
+                                <group>
+                                    <group string="Text Formatting" invisible="field_type != 'text'">
+                                        <field name="text_transform" help="Transform text case: UPPERCASE, lowercase, Title Case, Capitalize First Letter"/>
+                                    </group>
+                                    
+                                    <group string="Number Formatting" invisible="field_type not in ['number', 'currency', 'percentage']">
+                                        <field name="number_format" help="Choose how numbers are displayed in the spreadsheet"/>
+                                        <field name="decimal_places" help="Number of digits after the decimal point (0-10)"/>
+                                        <field name="currency_symbol" invisible="field_type != 'currency'" placeholder="$, €, £, ¥" help="Symbol to display before currency amounts"/>
+                                    </group>
+                                </group>
+                                
+                                <group>
+                                    <group string="Date Formatting" invisible="field_type not in ['date', 'datetime']">
+                                        <field name="date_format" help="Choose a predefined date format or select 'Custom' for your own"/>
+                                        <field name="custom_date_format" invisible="date_format != 'custom'" placeholder="%Y-%m-%d %H:%M:%S" help="Python strftime format. Use %Y (year), %m (month), %d (day), %H (hour), %M (minute), %S (second)"/>
+                                    </group>
+                                    
+                                    <group string="Boolean Formatting" invisible="field_type != 'boolean'">
+                                        <field name="true_value" placeholder="Yes, ✓, Active, Enabled" help="Text to display when the field value is True"/>
+                                        <field name="false_value" placeholder="No, ✗, Inactive, Disabled" help="Text to display when the field value is False"/>
+                                    </group>
+                                </group>
+                            </page>
+                            
+                            <page string="Relationships" name="relations">
+                                <group>
+                                    <group string="Relationship Display">
+                                        <field name="relation_display" help="How to display related records (many2one, many2many, one2many fields)"/>
+                                        <field name="relation_field" invisible="relation_display != 'custom'" placeholder="country_id.name, email" help="Specific field to display from related record (use dot notation for nested access)"/>
+                                        <field name="relation_separator" placeholder=", | ; | /" help="Character(s) to separate multiple related records"/>
+                                    </group>
+                                    
+                                    <group string="Advanced Options">
+                                        <field name="apply_function" help="Apply mathematical function to the field value"/>
+                                    </group>
+                                </group>
+                            </page>
+                            
+                            <page string="Conditions" name="conditions">
+                                <group>
+                                    <group string="Conditional Values">
+                                        <field name="use_condition" help="Enable if/then logic to show different values based on record conditions"/>
+                                        <field name="condition_expression" invisible="not use_condition" placeholder="record.state == 'sale'" help="Python expression that returns True or False"/>
+                                        <field name="condition_true_value" invisible="not use_condition" placeholder="Confirmed Order" help="Value to display when condition is True"/>
+                                        <field name="condition_false_value" invisible="not use_condition" placeholder="Draft Order" help="Value to display when condition is False"/>
+                                    </group>
+                                    
+                                    <group string="Validation">
+                                        <field name="validate_expression" placeholder="len(record.name) > 0" help="Python expression to validate the field value (return True if valid)"/>
+                                    </group>
+                                </group>
+                            </page>
+                        </notebook>
+                    </sheet>
+                    <chatter/>
+
+                </form>
+            </field>
+        </record>
+        
+        <!-- Google Sheets Mapping list View -->
+        <record id="view_gsheets_mapping_list" model="ir.ui.view">
+            <field name="name">gsheets.mapping.list</field>
+            <field name="model">gsheets.mapping</field>
+            <field name="arch" type="xml">
+                <list string="Google Sheets Mappings" decoration-danger="state == 'error'" decoration-warning="retry_count > 0" decoration-info="use_custom_retry or use_custom_notification">
+                    <field name="name"/>
+                    <field name="config_id"/>
+                    <field name="model_id"/>
+                    <field name="sheet_name"/>
+                    <field name="sync_mode"/>
+                    <field name="state" decoration-bf="1"/>
+                    <field name="retry_count" string="Retries"/>
+                    <field name="use_custom_retry" string="Custom Retry" optional="hide"/>
+                    <field name="use_custom_notification" string="Custom Notify" optional="hide"/>
+                    <field name="last_sync"/>
+                    <field name="records_synced"/>
+                </list>
+            </field>
+        </record>
+        
+        <!-- Google Sheets Mapping Search View -->
+        <record id="view_gsheets_mapping_search" model="ir.ui.view">
+            <field name="name">gsheets.mapping.search</field>
+            <field name="model">gsheets.mapping</field>
+            <field name="arch" type="xml">
+                <search string="Google Sheets Mappings">
+                    <field name="name"/>
+                    <field name="config_id"/>
+                    <field name="model_id"/>
+                    <field name="sheet_name"/>
+                    <separator/>
+                    <filter string="Active" name="active" domain="[('state', '=', 'active')]"/>
+                    <filter string="Error" name="error" domain="[('state', '=', 'error')]"/>
+                    <filter string="Has Retries" name="has_retries" domain="[('retry_count', '>', 0)]"/>
+                    <separator/>
+                    <filter string="Custom Retry Settings" name="custom_retry" domain="[('use_custom_retry', '=', True)]"/>
+                    <filter string="Custom Notifications" name="custom_notify" domain="[('use_custom_notification', '=', True)]"/>
+                    <filter string="Date Filter Enabled" name="date_filter" domain="[('use_date_filter', '=', True)]"/>
+                    <filter string="Headers Included" name="headers" domain="[('include_headers', '=', True)]"/>
+                    <group expand="0" string="Group By">
+                        <filter string="Configuration" name="config" context="{'group_by': 'config_id'}"/>
+                        <filter string="Model" name="model" context="{'group_by': 'model_id'}"/>
+                        <filter string="Status" name="state" context="{'group_by': 'state'}"/>
+                        <filter string="Sync Mode" name="sync_mode" context="{'group_by': 'sync_mode'}"/>
+                        <filter string="Retry Settings" name="retry_settings" context="{'group_by': 'use_custom_retry'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+        
+        <!-- Google Sheets Mapping Action -->
+        <record id="action_gsheets_mapping" model="ir.actions.act_window">
+            <field name="name">Google Sheets Mappings</field>
+            <field name="res_model">gsheets.mapping</field>
+            <field name="view_mode">list,form</field>
+            <field name="context">{}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Create your first field mapping!
+                </p>
+                <p>
+                    <strong>📊 Advanced Google Sheets Integration</strong><br/>
+                    Map Odoo data to Google Sheets with powerful features:
+                </p>
+                <ul>
+                    <li><strong>🔧 Field Mapping:</strong> Direct fields, custom expressions, computed values</li>
+                    <li><strong>🎨 Formatting:</strong> Currency, dates, percentages, text transformations</li>
+                    <li><strong>🔗 Relationships:</strong> Related data with custom display options</li>
+                    <li><strong>⚡ Conditions:</strong> Dynamic values based on record state</li>
+                    <li><strong>📅 Filtering:</strong> Date ranges and domain filters</li>
+                </ul>
+                <p>
+                    <strong>🚀 Quick Start:</strong> Use the "Apply Template" button for common use cases like Sales Orders, Products, or Customers.
+                </p>
+            </field>
+        </record>
+
+    </data>
+</odoo> 

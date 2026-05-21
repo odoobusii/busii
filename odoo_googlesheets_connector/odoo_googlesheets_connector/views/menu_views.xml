@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        
+        <!-- Main Menu -->
+        <menuitem id="menu_gsheets_sync_root"
+                  name="Google Sheets Sync"
+                  web_icon="odoo_googlesheets_connector,static/description/icon.png"
+                  sequence="100"/>
+
+        <!-- Configuration Menu -->
+        <menuitem id="menu_gsheets_sync_config"
+                  name="Configuration"
+                  parent="menu_gsheets_sync_root"
+                  sequence="10"/>
+
+        <menuitem id="menu_gsheets_config"
+                  name="Google Sheets Configurations"
+                  parent="menu_gsheets_sync_config"
+                  action="action_gsheets_config"
+                  sequence="10"/>
+
+        <menuitem id="menu_gsheets_mapping"
+                  name="Field Mappings"
+                  parent="menu_gsheets_sync_config"
+                  action="action_gsheets_mapping"
+                  sequence="20"/>
+
+        <!-- Monitoring Menu -->
+        <menuitem id="menu_gsheets_sync_monitoring"
+                  name="Monitoring"
+                  parent="menu_gsheets_sync_root"
+                  sequence="20"/>
+
+        <menuitem id="menu_gsheets_sync_log"
+                  name="Sync Logs"
+                  parent="menu_gsheets_sync_monitoring"
+                  action="action_gsheets_sync_log"
+                  sequence="10"/>
+
+    </data>
+</odoo> 

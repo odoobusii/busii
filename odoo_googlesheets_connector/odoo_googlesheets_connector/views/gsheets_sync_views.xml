@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        
+        <!-- Google Sheets Sync Log Tree View -->
+        <record id="view_gsheets_sync_log_tree" model="ir.ui.view">
+            <field name="name">gsheets.sync.log.tree</field>
+            <field name="model">gsheets.sync.log</field>
+            <field name="arch" type="xml">
+                <list string="Google Sheets Sync Logs">
+                    <field name="config_id"/>
+                    <field name="mapping_id"/>
+                    <field name="sync_type"/>
+                    <field name="status"/>
+                    <field name="records_synced"/>
+                    <field name="create_date"/>
+                    <field name="message"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- Google Sheets Sync Log Search View -->
+        <record id="view_gsheets_sync_log_search" model="ir.ui.view">
+            <field name="name">gsheets.sync.log.search</field>
+            <field name="model">gsheets.sync.log</field>
+            <field name="arch" type="xml">
+                <search string="Google Sheets Sync Logs">
+                    <field name="config_id"/>
+                    <field name="mapping_id"/>
+                    <field name="sync_type"/>
+                    <field name="status"/>
+                    <filter string="Success" name="success" domain="[('status', '=', 'success')]"/>
+                    <filter string="Error" name="error" domain="[('status', '=', 'error')]"/>
+                    <filter string="Manual" name="manual" domain="[('sync_type', '=', 'manual')]"/>
+                    <filter string="Scheduled" name="scheduled" domain="[('sync_type', '=', 'scheduled')]"/>
+                    <group expand="0" string="Group By">
+                        <filter string="Configuration" name="config" context="{'group_by': 'config_id'}"/>
+                        <filter string="Mapping" name="mapping" context="{'group_by': 'mapping_id'}"/>
+                        <filter string="Status" name="status" context="{'group_by': 'status'}"/>
+                        <filter string="Sync Type" name="sync_type" context="{'group_by': 'sync_type'}"/>
+                        <filter string="Date" name="date" context="{'group_by': 'create_date:day'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- Google Sheets Sync Log Action -->
+        <record id="action_gsheets_sync_log" model="ir.actions.act_window">
+            <field name="name">Google Sheets Sync Logs</field>
+            <field name="res_model">gsheets.sync.log</field>
+            <field name="view_mode">list</field>
+            <field name="context">{}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    No sync logs yet!
+                </p>
+                <p>
+                    Sync logs will appear here after you run synchronizations.
+                </p>
+            </field>
+        </record>
+
+    </data>
+</odoo> 

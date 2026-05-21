@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Google Sheets Config Form View -->
+        <record id="view_gsheets_config_form" model="ir.ui.view">
+            <field name="name">gsheets.config.form</field>
+            <field name="model">gsheets.config</field>
+            <field name="arch" type="xml">
+                <form string="Google Sheets Configuration">
+                    <header>
+                        <button name="action_test_connection" string="Test Connection" type="object"
+                                class="btn-primary"/>
+                        <button name="action_manual_sync" string="Manual Sync" type="object" class="btn-warning"
+                                confirm="Are you sure you want to sync this configuration now (regardless of schedule)?"
+                                invisible="state != 'active'"/>
+                        <button name="action_activate" string="Activate" type="object" class="btn-success"/>
+                        <button name="action_deactivate" string="Deactivate" type="object" class="btn-secondary"/>
+                        <field name="state" widget="statusbar" statusbar_visible="draft,configured,active"/>
+                    </header>
+
+                    <sheet>
+                        <div class="alert alert-danger" role="alert" invisible="state != 'error'">
+                            <strong>Configuration Error:</strong>
+                            <field name="error_message" readonly="1"/>
+                        </div>
+
+                        <div class="alert alert-warning" role="alert" invisible="retry_count == 0 or state == 'error'">
+                            <strong>Retry in Progress:</strong>
+                            Failed
+                            <field name="retry_count" readonly="1"/>
+                            out of
+                            <field name="retry_limit" readonly="1"/>
+                            attempts.
+                        </div>
+
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name" placeholder="Configuration Name"/>
+                            </h1>
+                        </div>
+
+                        <group>
+                            <group string="Basic Information">
+                                <field name="active"/>
+                                <field name="state" widget="badge" decoration-success="state == 'active'"
+                                       decoration-info="state == 'configured'" decoration-danger="state == 'error'"
+                                       decoration-muted="state == 'draft'"/>
+                                <field name="spreadsheet_url"/>
+                                <field name="spreadsheet_id" readonly="1"/>
+                            </group>
+
+                            <group string="Sync Settings">
+                                <field name="sync_interval"/>
+                                <field name="last_sync" readonly="1"/>
+                                <field name="next_sync" readonly="1"/>
+                            </group>
+                        </group>
+
+                        <group>
+                            <group string="Retry Policy">
+                                <field name="retry_limit"/>
+                                <field name="retry_count" readonly="1"/>
+                            </group>
+
+                            <group string="Failure Notifications">
+                                <field name="notify_on_failure"/>
+                                <field name="notify_partner_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                            </group>
+                        </group>
+
+                        <notebook>
+                            <page string="Authentication" name="auth">
+                                <group>
+                                    <group string="Service Account (Recommended)">
+                                        <field name="service_account_file" filename="service_account_filename"/>
+                                        <field name="service_account_filename" invisible="1"/>
+                                    </group>
+
+                                    <group string="OAuth2 Credentials (Alternative)">
+                                        <field name="client_id"/>
+                                        <field name="client_secret" password="True"/>
+                                        <field name="refresh_token" password="True"/>
+                                    </group>
+                                </group>
+
+                                <div class="alert alert-info" role="alert">
+                                    <strong>Note:</strong>
+                                    You can use either Service Account (recommended) or OAuth2 credentials.
+                                    Service Account is easier to set up and more secure for server-to-server
+                                    communication.
+                                </div>
+                            </page>
+
+                            <page string="Field Mappings" name="mappings">
+                                <field name="mapping_ids">
+                                    <list>
+                                        <field name="name"/>
+                                        <field name="model_id"/>
+                                        <field name="sheet_name"/>
+                                        <field name="sync_mode"/>
+                                        <field name="state"/>
+                                        <field name="last_sync"/>
+                                        <field name="records_synced"/>
+                                    </list>
+                                </field>
+                            </page>
+
+                            <page string="Sync Logs" name="logs">
+                                <field name="sync_log_ids" readonly="1">
+                                    <list>
+                                        <field name="mapping_id"/>
+                                        <field name="sync_type"/>
+                                        <field name="status"/>
+                                        <field name="records_synced"/>
+                                        <field name="create_date"/>
+                                        <field name="message"/>
+                                    </list>
+                                </field>
+                            </page>
+                        </notebook>
+
+                        <group string="Error Information" invisible="not error_message">
+                            <field name="error_message" readonly="1" widget="text"/>
+                        </group>
+                    </sheet>
+                    <chatter/>
+
+                </form>
+            </field>
+        </record>
+
+        <!-- Google Sheets Config list View -->
+        <record id="view_gsheets_config_list" model="ir.ui.view">
+            <field name="name">gsheets.config.list</field>
+            <field name="model">gsheets.config</field>
+            <field name="arch" type="xml">
+                <list string="Google Sheets Configurations" decoration-danger="state == 'error'"
+                      decoration-warning="retry_count > 0">
+                    <field name="name"/>
+                    <field name="spreadsheet_id"/>
+                    <field name="state" decoration-bf="1"/>
+                    <field name="retry_count" string="Retries"/>
+                    <field name="sync_interval"/>
+                    <field name="last_sync"/>
+                    <field name="next_sync"/>
+                    <field name="error_message" optional="hide"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- Google Sheets Config Search View -->
+        <record id="view_gsheets_config_search" model="ir.ui.view">
+            <field name="name">gsheets.config.search</field>
+            <field name="model">gsheets.config</field>
+            <field name="arch" type="xml">
+                <search string="Google Sheets Configurations">
+                    <field name="name"/>
+                    <field name="spreadsheet_id"/>
+                    <field name="error_message"/>
+                    <separator/>
+                    <filter string="Active" name="active" domain="[('state', '=', 'active')]"/>
+                    <filter string="Error" name="error" domain="[('state', '=', 'error')]"/>
+                    <filter string="Has Retries" name="has_retries" domain="[('retry_count', '>', 0)]"/>
+                    <filter string="Retry Exhausted" name="retry_exhausted"
+                            domain="[('retry_count', '>=', 'retry_limit')]"/>
+                    <separator/>
+                    <filter string="Configured" name="configured" domain="[('state', 'in', ['configured', 'active'])]"/>
+                    <group expand="0" string="Group By">
+                        <filter string="Status" name="state" context="{'group_by': 'state'}"/>
+                        <filter string="Retry Status" name="retry_status" context="{'group_by': 'retry_count'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- Google Sheets Config Action -->
+        <record id="action_gsheets_config" model="ir.actions.act_window">
+            <field name="name">Google Sheets Configurations</field>
+            <field name="res_model">gsheets.config</field>
+            <field name="view_mode">list,form</field>
+            <field name="context">{'search_default_active': 1}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Create your first Google Sheets configuration!
+                </p>
+                <p>
+                    Configure your Google Sheets API credentials and spreadsheet settings here.
+                </p>
+            </field>
+        </record>
+
+    </data>
+</odoo> 
