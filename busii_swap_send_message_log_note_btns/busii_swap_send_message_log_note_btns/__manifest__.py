@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': "Swap Send message and Log note buttons",
-    "version": "18.0.1.0.0",
+    "version": "19.0.1.0.0",
     'license': 'LGPL-3',
     'author': "busii",
     'website': "http://www.busii.com/odoo-apps",
@@ -14,7 +14,7 @@
     'depends': ['mail'],
     'assets': {
         'web.assets_backend': [
-            'busii_swap_send_message_log_note_btns/static/src/core/chatter/chatter.xml',
+            'busii_swap_send_message_log_note_btns/static/src/chatter/web/chatter.xml',
         ],
     },
     'images': ['static/description/icon.jpg'],

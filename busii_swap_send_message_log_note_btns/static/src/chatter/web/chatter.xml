@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<templates xml:space="preserve">
+    <t t-name="chatter_override.Chatter" t-inherit="mail.Chatter" t-inherit-mode="extension">
+        <!-- Positioned where "Send message" used to be, now drives the Log note composer -->
+        <xpath expr="//button[hasclass('o-mail-Chatter-sendMessage')]" position="replace">
+            <button class="o-mail-Chatter-sendMessage btn text-nowrap me-1" t-att-class="{
+                    'btn-primary': state.composerType !== 'message',
+                    'btn-secondary': state.composerType === 'message',
+                    'active': state.composerType === 'note',
+                    'my-2': !props.compactHeight
+                }" data-hotkey="m" t-on-click="() => this.toggleComposer('note')">
+                Log note
+            </button>
+        </xpath>
+        <!-- Positioned where "Log note" used to be, now drives the Send message composer -->
+        <xpath expr="//button[hasclass('o-mail-Chatter-logNote')]" position="replace">
+            <button class="o-mail-Chatter-logNote btn text-nowrap me-1" t-att-class="{
+                    'btn-primary active': state.composerType === 'message',
+                    'btn-secondary': state.composerType !== 'message',
+                    'my-2': !props.compactHeight
+                }" data-hotkey="shift+m" t-on-click="() => this.toggleComposer('message')">
+                Send message
+            </button>
+        </xpath>
+    </t>
+</templates>

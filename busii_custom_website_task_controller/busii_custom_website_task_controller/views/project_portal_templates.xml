@@ -1,59 +1,72 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <!-- ============================================================
+         Task list: add Date Start / Date End / Blocked By columns
+         ============================================================ -->
+    <template id="custom_portal_tasks_list_inherit"
+              inherit_id="project.portal_tasks_list"
+              name="Portal: Task List — busii extra columns">
 
-    <template id="custom_portal_tasks_list_inherit" inherit_id="project.portal_tasks_list" name="Portal: My Tasks">
-
-        <xpath expr="//t[@t-foreach='tasks']/tr" position="before">
-            <td>
-                <span t-set="planned_date_begin" t-value="task.sudo().planned_date_begin"/>
-            </td>
-            <td>
-                <span t-set="date_end" t-value="task.sudo().date_end"/>
-            </td>
-            <td>
-                <span t-set="depend_on_ids" t-value="task.sudo().depend_on_ids"/>
-            </td>
+        <!-- 2. Replace the task ID cell with the linked sale order name -->
+        <xpath expr="//t[@t-foreach='tasks']/tr/td//span[@t-esc='task.id']" position="replace">
+            <a t-attf-href="/my/orders/#{task.sale_order_id.id}?{{ keep_query() }}">
+                <span t-out="task.sale_order_id.name[:18] + ' ...' if task.sale_order_id.name and len(task.sale_order_id.name) &gt; 18 else task.sale_order_id.name"/>
+            </a>
         </xpath>
-        <xpath expr="//thead/tr/th[@name='project_portal_milestones']" position="after">
-            <th class="text-center">Date start</th>
-            <th class="text-center">Date end</th>
+
+        <!-- Fix colspan: bump by 3 before Odoo's own reductions run -->
+        <xpath expr="//t[@t-set='grouped_tasks_colspan'][@t-if='not allow_milestone']" position="before">
+            <t t-set="grouped_tasks_colspan" t-value="grouped_tasks_colspan + 3"/>
+        </xpath>
+
+        <!-- Milestone column missing when groupby=milestone_id: add headers anchored to stage th -->
+        <xpath expr="//thead/tr/th[@name='project_portal_milestones']" position="replace">
+            <th t-if="groupby != 'milestone_id' and allow_milestone" name="project_portal_milestones">Milestone</th>
+            <th class="text-center">Date Start</th>
+            <th class="text-center">Date End</th>
             <th class="text-center">Blocked By</th>
         </xpath>
 
-        <xpath expr="//t[@t-foreach='tasks']/tr/td//span[@t-esc='task.id']" position="replace">
-            <!-- <span t-esc="task.sudo().sale_order_id.name"/> -->
-            <a t-attf-href="/my/orders/#{task.sale_order_id.id}?{{ keep_query() }}">
-                            <span t-esc="task.sale_order_id.name[:18] + ' ...' if task.sale_order_id.name and len(task.sale_order_id.name) &gt; 18 else task.sale_order_id.name"/>
-                        </a>
-        </xpath>
-
-        <xpath expr="//tbody/t/tr/td[@name='project_portal_milestones']" position="after">
-            <td>
-                <t t-esc="planned_date_begin" t-options='{"widget": "date"}'/>
+        <!-- Same for data cells -->
+        <xpath expr="//tbody/t/tr/td[@name='project_portal_milestones']" position="replace">
+            <td t-if="groupby != 'milestone_id' and allow_milestone" name="project_portal_milestones">
+                <t t-if="task.milestone_id and task.allow_milestones">
+                    <span t-esc="task.milestone_id.name"/>
+                </t>
             </td>
             <td>
-                <t t-esc="date_end" t-options='{"widget": "date"}'/>
+                <t t-out="task.sudo().planned_date_begin" t-options='{"widget": "date"}'/>
+            </td>
+            <td>
+                <t t-out="task.sudo().date_end" t-options='{"widget": "date"}'/>
             </td>
             <td class="text-end">
                 <t t-set="depend_on_ids" t-value="task.sudo().depend_on_ids"/>
-                <div t-if="depend_on_ids" class="row flex-wrap ps-3"
+                <div t-if="depend_on_ids"
+                     class="row flex-wrap ps-3"
                      t-att-title="'\n'.join(depend_on_ids.mapped('name'))">
-                    <t t-foreach="depend_on_ids" t-as="task">
-                        <a t-attf-href="/my/#{task_url}/#{task.id}?{{ keep_query() }}">
-                            <span t-esc="task.name[:18] + ' ...' if task.name and len(task.name) &gt; 18 else task.name"/>
+                    <t t-foreach="depend_on_ids" t-as="dep_task">
+                        <a t-attf-href="/my/#{task_url}/#{dep_task.id}?{{ keep_query() }}">
+                            <span t-out="dep_task.name[:18] + ' ...' if dep_task.name and len(dep_task.name) &gt; 18 else dep_task.name"/>
                         </a>
                         <br/>
                     </t>
                 </div>
             </td>
         </xpath>
+
     </template>
 
 
+    <!-- ============================================================
+         Single task view: add "Depends on tasks" nav + section
+         ============================================================ -->
     <template id="custom_portal_my_task"
               inherit_id="project.portal_my_task"
-              name="Portal: My Task with depends on tasks">
+              name="Portal: My Task — busii blocked-by section">
+
+        <!-- Nav link -->
         <xpath expr="//li[@id='nav-header']" position="after">
             <li t-if="task.depend_on_ids" class="nav-item">
                 <a class="nav-link ps-3" href="#task_depend_on_task_ids">
@@ -61,46 +74,64 @@
                 </a>
             </li>
         </xpath>
+
+        <!-- Blocked-by table inside card body -->
         <xpath expr="//div[@id='card_body']" position="inside">
             <div class="container" t-if="task.depend_on_ids">
                 <hr class="mt-4 mb-1"/>
-                <h5 id="task_depend_on_task_ids" class="mt-2 mb-2" data-anchor="true">Blocked By tasks</h5>
+                <h5 id="task_depend_on_task_ids" class="mt-2 mb-2" data-anchor="true">
+                    Blocked By tasks
+                </h5>
                 <t t-call="busii_custom_website_task_controller.portal_depends_on_table">
-                <t t-set="task_url" t-value="task_url if task_url else 'tasks'"/>
-                
+                    <t t-set="task_url" t-value="task_url if task_url else 'tasks'"/>
                 </t>
             </div>
         </xpath>
+
     </template>
 
-    <template id="portal_depends_on_table" name="Portal Blocked by Table">
+
+    <!-- ============================================================
+         Reusable blocked-by dependency table
+         ============================================================ -->
+    <template id="portal_depends_on_table" name="Portal: Blocked By Table">
         <table class="table table-sm">
             <thead>
                 <tr>
-                    <th>Date deadline</th>
-                    <th>Date start</th>
-                    <th>Date end</th>
-                    <th>Description</th>
+                    <th>Task</th>
+                    <th>Date Start</th>
+                    <th>Date End</th>
+                    <th>Deadline</th>
                 </tr>
             </thead>
-            <tr t-foreach="task.depend_on_ids" t-as="task_depend_on_task_ids">
-                <td>
-                    <t t-esc="task.date_end" t-options='{"widget": "date"}'/>
-                </td>
-                <td>
-                    <t t-esc="task.sudo().planned_date_begin" t-options='{"widget": "date"}'/>
-                </td>
-                <td>
-                    <t t-esc="task.sudo().date_end" t-options='{"widget": "date"}'/>
-                </td>
-                <td>
-                    <a t-attf-href="/my/#{task_url}/#{task_depend_on_task_ids.id}?{{ keep_query() }}">
-                        <span t-esc="task_depend_on_task_ids.name[:60] + ' ...' if task_depend_on_task_ids.name and len(task_depend_on_task_ids.name) &gt; 60 else task_depend_on_task_ids.name"/>
-                    </a>
-                </td>
-            </tr>
+            <tbody>
+                <tr t-foreach="task.depend_on_ids" t-as="dep">
+                    <td>
+                        <a t-attf-href="/my/#{task_url}/#{dep.id}?{{ keep_query() }}">
+                            <span t-out="dep.name[:60] + ' ...' if dep.name and len(dep.name) &gt; 60 else dep.name"/>
+                        </a>
+                    </td>
+                    <td>
+                        <t t-out="dep.sudo().planned_date_begin" t-options='{"widget": "date"}'/>
+                    </td>
+                    <td>
+                        <t t-out="dep.sudo().date_end" t-options='{"widget": "date"}'/>
+                    </td>
+                    <td>
+                        <t t-out="dep.sudo().date_deadline" t-options='{"widget": "date"}'/>
+                    </td>
+                </tr>
+            </tbody>
         </table>
     </template>
 
+    <template id="custom_portal_tasks_list_hide_totals"
+            inherit_id="hr_timesheet.portal_tasks_list_inherit"
+            name="Portal: Task List — busii hide time-spent totals header">
+        <xpath expr="//th[@name='state_col']/preceding-sibling::th[@t-if='not project or project.allow_timesheets'][1]"
+            position="attributes">
+            <attribute name="t-if">(not project or project.allow_timesheets) and show_portal_timesheets</attribute>
+        </xpath>
+    </template>
 
 </odoo>

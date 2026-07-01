@@ -1,33 +1,54 @@
 # -*- coding: utf-8 -*-
-# Part of Odoo. See LICENSE file for full copyright and licensing details.
+import logging
 
-from collections import defaultdict
+from odoo import http, _
 from odoo.http import request
-from odoo.osv import expression
-from odoo import conf, http, _
+from odoo.addons.project.controllers.portal import ProjectCustomerPortal
+from odoo.addons.hr_timesheet.controllers.portal import TimesheetCustomerPortal
 
-from odoo.addons.project.controllers.portal import CustomerPortal
-
-from odoo.tools import groupby as groupbyelem
-from operator import itemgetter
-
-from odoo.osv.expression import OR, AND
+_logger = logging.getLogger(__name__)
 
 
-class ProjectCustomerPortal(CustomerPortal):
+class BusiiProjectCustomerPortal(ProjectCustomerPortal):
 
     def _task_get_searchbar_sortings(self, milestones_allowed, project=False):
         values = super()._task_get_searchbar_sortings(milestones_allowed, project)
-        values['planned_date_begin'] = {'label': _('Planned Date'), 'order': 'planned_date_begin asc', 'sequence': -1}
+        _logger.info("busii_portal: injecting planned_date_begin sort option")
+        values['planned_date_begin'] = {
+            'label': _('Planned Date'),
+            'order': 'planned_date_begin asc',
+            'sequence': 5,
+        }
         return values
 
-    def _project_get_page_view_values(self, project, access_token, page=1, date_begin=None, date_end=None, sortby=None,
-                                      search=None, search_in='content', groupby=None, **kwargs):
+    @http.route(
+        ['/my/projects/<int:project_id>', '/my/projects/<int:project_id>/page/<int:page>'],
+        type='http', auth="public", website=True
+    )
+    def portal_my_project(self, project_id=None, access_token=None, page=1, date_begin=None,
+                          date_end=None, sortby=None, search=None, search_in='content',
+                          groupby=None, task_id=None, **kw):
+        """Override to force default sortby and groupby for busii portal."""
         if not sortby:
             sortby = 'planned_date_begin'
-        if not groupby:
-            groupby = 'milestone'
-        values = super()._project_get_page_view_values(project, access_token, page=page, date_begin=date_begin,
-                                                       date_end=date_end, sortby=sortby, search=search,
-                                                       search_in=search_in, groupby=groupby, **kwargs)
-        return values
+        if not groupby or groupby == 'project_id':
+            project = request.env['project.project'].browse(project_id)
+            groupby = 'milestone_id' if project.allow_milestones else 'none'
+
+        _logger.info(
+            "busii_portal: portal_my_project called — sortby=%s, groupby=%s", sortby, groupby
+        )
+
+        return super().portal_my_project(
+            project_id=project_id, access_token=access_token, page=page,
+            date_begin=date_begin, date_end=date_end, sortby=sortby,
+            search=search, search_in=search_in, groupby=groupby,
+            task_id=task_id, **kw
+        )
+    
+    class BusiiTimesheetPortal(TimesheetCustomerPortal):
+
+        def _prepare_home_portal_values(self, counters):
+            if request.env.user.share:
+                counters = [c for c in counters if c != 'timesheet_count']
+            return super()._prepare_home_portal_values(counters)

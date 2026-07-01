@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Project portal view update',
-    'version': '18.0.0.0.1',
+    'version': '19.0.0.0.1',
     'license': 'LGPL-3',
     "author": "busii",
     "website": "https://www.busii.com/odoo-apps",
@@ -13,7 +13,7 @@
     """,
     'support' : "odooapps@busii.odoo.com",
     'category': 'Customizations',
-    'depends': ['project', 'website'],
+    'depends': ['project', 'website', 'hr_timesheet'],
     'data': [
         "views/project_portal_templates.xml",
     ],
