@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Template id kept identical to the v18 release so the external id is not
+         orphaned when an existing installation is upgraded. -->
+    <template id="custom_report_Invoice" inherit_id="account.report_invoice_document">
+
+        <!--
+            Partner address + VAT block.
+
+            In Odoo 19 all three address layouts (different shipping address,
+            same shipping address, and no shipping address) render the partner
+            block via <t t-set="address"> with an <address t-field="..."/> inside.
+            In v18 these blocks had differing internal markup, so the original
+            module targeted "//div[1]" for two of them which no longer points at
+            the right node on v19. We now override the t-set node consistently
+            for all three so the rendered output is identical in every case.
+        -->
+        <xpath expr="//div[@name='address_not_same_as_shipping']//t[@t-set='address']" position="replace">
+            <t t-set="address">
+                <address class="mb-0">
+                    <div t-field="o.partner_id"
+                         t-options='{"widget": "contact", "fields": ["address", "name"], "no_marker": True}'/>
+                    <t t-if="o.partner_id.vat">
+                        <div>
+                            <t t-if="o.company_id.account_fiscal_country_id.vat_label"
+                               t-out="o.company_id.account_fiscal_country_id.vat_label"/>
+                            <t t-else="">Vat no.</t>: <span t-field="o.partner_id.vat"/>
+                        </div>
+                    </t>
+                </address>
+            </t>
+        </xpath>
+
+        <xpath expr="//div[@name='address_same_as_shipping']//t[@t-set='address']" position="replace">
+            <t t-set="address">
+                <address class="mb-0">
+                    <div t-field="o.partner_id"
+                         t-options='{"widget": "contact", "fields": ["address", "name"], "no_marker": True}'/>
+                    <t t-if="o.partner_id.vat">
+                        <div>
+                            <t t-if="o.company_id.account_fiscal_country_id.vat_label"
+                               t-out="o.company_id.account_fiscal_country_id.vat_label"/>
+                            <t t-else="">Vat no.</t>: <span t-field="o.partner_id.vat"/>
+                        </div>
+                    </t>
+                </address>
+            </t>
+        </xpath>
+
+        <xpath expr="//div[@name='no_shipping']//t[@t-set='address']" position="replace">
+            <t t-set="address">
+                <address class="mb-0">
+                    <div t-field="o.partner_id"
+                         t-options='{"widget": "contact", "fields": ["address", "name"], "no_marker": True}'/>
+                    <t t-if="o.partner_id.vat">
+                        <div>
+                            <t t-if="o.company_id.account_fiscal_country_id.vat_label"
+                               t-out="o.company_id.account_fiscal_country_id.vat_label"/>
+                            <t t-else="">Vat no.</t>: <span t-field="o.partner_id.vat"/>
+                        </div>
+                    </t>
+                </address>
+            </t>
+        </xpath>
+
+        <!-- Drop the top margin (mt-3) on the payment term block. -->
+        <xpath expr="//div[@id='payment_term']" position="attributes">
+            <attribute name="class">clearfix</attribute>
+        </xpath>
+
+        <!-- Replace the payment-term note with vertical spacing. -->
+        <xpath expr="//span[@name='payment_term']" position="replace">
+            <br/>
+            <section class="mt-4">
+                <br/><br/><br/><br/><br/>
+                <p></p>
+                <p></p>
+            </section>
+        </xpath>
+
+        <!-- Payment reference / communication wording and layout. -->
+        <xpath expr="//p[@name='payment_communication']" position="replace">
+            <div class="row mb-4">
+                <div class="col-12">
+                    <p name="payment_communication" style="white-space: normal; margin: 0;">
+                        Please use the following reference for your payment:
+                        <span t-field="o.payment_reference" class="fw-bold" style="white-space: nowrap;"/>
+                        <t t-if="o.partner_bank_id">
+                            on this account: <span t-field="o.partner_bank_id" class="fw-bold"/>
+                        </t>
+                    </p>
+                </div>
+            </div>
+        </xpath>
+
+    </template>
+</odoo>
