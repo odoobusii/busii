@@ -1,0 +1,93 @@
+<odoo>
+    <data>
+        
+        <!-- Add custom fields to CRM Lead -->
+        <record id="view_crm_lead_form_facebook_fields" model="ir.ui.view">
+            <field name="name">crm.lead.form.facebook.fields</field>
+            <field name="model">crm.lead</field>
+            <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+            <field name="arch" type="xml">
+                <!-- Add to first page - Show only for opportunities -->
+                <xpath expr="//group[@name='left_column']" position="inside">
+                    <field name="x_flooring_area" invisible="type == 'lead'"/>
+                    <field name="x_project_timeline" invisible="type == 'lead'"/>
+                    <field name="x_callback_consent" invisible="type == 'lead'"/>
+                </xpath>
+                
+                <!-- Add to Facebook Info page -->
+                <xpath expr="//page[@name='categorization']" position="inside">
+                    <field name="x_facebook_raw_data" widget="text" nolabel="1"/>
+                </xpath>
+            </field>
+        </record>
+        
+        <!-- Alternative: Using groups for better visibility control -->
+        <record id="view_crm_lead_form_facebook_fields_v2" model="ir.ui.view">
+            <field name="name">crm.lead.form.facebook.fields.v2</field>
+            <field name="model">crm.lead</field>
+            <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+            <field name="arch" type="xml">
+                <!-- Add fields in a separate group with visibility control -->
+                <xpath expr="//group[@name='left_column']" position="after">
+                    <group name="facebook_lead_info" string="Facebook Lead Details">
+                        <field name="x_flooring_area"/>
+                        <field name="x_project_timeline"/>
+                        <field name="x_callback_consent"/>
+                    </group>
+                </xpath>
+                
+                <!-- Add raw data to Facebook Info page -->
+                <xpath expr="//page[@name='categorization']/group[@name='facebook_info']" position="inside">
+                    <field name="x_facebook_raw_data" widget="text" nolabel="1" colspan="2"/>
+                </xpath>
+            </field>
+        </record>
+        
+        <!-- Add fields to tree view -->
+        <record id="view_crm_lead_tree_facebook_fields" model="ir.ui.view">
+            <field name="name">crm.lead.tree.facebook.fields</field>
+            <field name="model">crm.lead</field>
+            <field name="inherit_id" ref="crm.crm_lead_view_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='email_from']" position="after">
+                    <field name="x_project_timeline"/>
+                    <field name="x_flooring_area"/>
+                </xpath>
+            </field>
+        </record>
+        
+        <!-- Add custom fields definition -->
+        <record id="field_crm_lead_flooring_area" model="ir.model.fields">
+            <field name="name">x_flooring_area</field>
+            <field name="field_description">Flooring Area</field>
+            <field name="model_id" ref="model_crm_lead"/>
+            <field name="ttype">char</field>
+            <field name="store">True</field>
+        </record>
+        
+        <record id="field_crm_lead_project_timeline" model="ir.model.fields">
+            <field name="name">x_project_timeline</field>
+            <field name="field_description">Project Timeline</field>
+            <field name="model_id" ref="model_crm_lead"/>
+            <field name="ttype">char</field>
+            <field name="store">True</field>
+        </record>
+        
+        <record id="field_crm_lead_callback_consent" model="ir.model.fields">
+            <field name="name">x_callback_consent</field>
+            <field name="field_description">Callback Consent</field>
+            <field name="model_id" ref="model_crm_lead"/>
+            <field name="ttype">boolean</field>
+            <field name="store">True</field>
+        </record>
+        
+        <record id="field_crm_lead_facebook_raw_data" model="ir.model.fields">
+            <field name="name">x_facebook_raw_data</field>
+            <field name="field_description">Facebook Raw Data</field>
+            <field name="model_id" ref="model_crm_lead"/>
+            <field name="ttype">text</field>
+            <field name="store">True</field>
+        </record>
+        
+    </data>
+</odoo>
