@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WhatsApp After-Hours Reply</title>
+<style>
+  body{
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    max-width: 760px;
+    margin: 3rem auto;
+    padding: 0 1.25rem 4rem;
+    line-height: 1.6;
+    color: #1a1a1a;
+    font-size: 16px;
+  }
+  h1{ font-size: 1.9rem; margin-bottom: 0.3rem; }
+  h1 + p{ color: #555; margin-top: 0; }
+  h2{
+    font-size: 1.25rem;
+    margin-top: 3rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid #ddd;
+  }
+  p{ margin: 0.8rem 0; }
+  code{
+    background: #f2f2f2;
+    padding: 0.15em 0.4em;
+    border-radius: 3px;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 0.9em;
+  }
+  pre{
+    background: #f2f2f2;
+    padding: 0.9rem 1rem;
+    border-radius: 4px;
+    overflow-x: auto;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+  ul, ol{ padding-left: 1.3rem; }
+  li{ margin-bottom: 0.4rem; }
+  .warning{
+    background: #fdf2ef;
+    border-left: 3px solid #b23b2e;
+    padding: 0.8rem 1rem;
+    margin: 1.25rem 0;
+  }
+  .warning strong{ display: block; margin-bottom: 0.3rem; }
+  .caption{
+    font-size: 0.85rem;
+    color: #777;
+    margin-top: -0.75rem;
+    margin-bottom: 1.5rem;
+  }
+</style>
+</head>
+<body>
+
+<h1>WhatsApp After-Hours Reply</h1>
+<p>Odoo 18 custom addon &mdash; sends a free-text session reply to inbound WhatsApp messages received outside office hours, without touching Odoo's template system.</p>
+
+<h2>1. Overview</h2>
+<p>Odoo's WhatsApp module only sends outbound messages through approved templates, which Meta scores on a rolling 7-day quality rating. A one-way "we're closed" notice tends to get marked as unwanted by recipients, which degrades and can eventually disable the template.</p>
+<p>This module sends the after-hours notice as a plain <strong>session (free-text) message</strong> via the WhatsApp Cloud API instead. Session messages are valid for any reply sent within the 24-hour customer service window opened by the customer's own inbound message, and are not subject to template quality scoring.</p>
+
+<img style="width:100%; height:auto; display:block; margin:1.25rem 0; border:1px solid #ddd; border-radius:4px;" src="screenshot-whatsapp-conversation.png" alt="WhatsApp conversation showing the after-hours reply received by a customer">
+<p class="caption">screenshot-whatsapp-conversation.png</p>
+
+<h2>2. How it works</h2>
+<p>An Automated Action fires on every new inbound <code>whatsapp.message</code>. It calls a single method, which runs through these checks in order:</p>
+<ul>
+  <li>Is this message actually inbound, and does it have an account and a number?</li>
+  <li>Is <em>now</em>, in business local time, outside office hours (or a weekend)?</li>
+  <li>Has this number already received the canned reply within the last 12 hours?</li>
+</ul>
+<p>If all three pass, it sends the reply by POSTing directly to the WhatsApp Cloud (Graph) API &mdash; deliberately not through Odoo's own send method, which only supports templates. The send is logged for de-duplication and audit, and best-effort mirrored into the customer's Discuss channel so agents can see it happened.</p>
+
+<img style="width:100%; height:auto; display:block; margin:1.25rem 0; border:1px solid #ddd; border-radius:4px;" src="screenshot-automated-action.png" alt="The Automated Action record in Settings, Technical, Automation Rules">
+<p class="caption">screenshot-automated-action.png</p>
+
+<h2>3. Configuration</h2>
+<p>The business rules are four constants at the top of <code>models/whatsapp_message.py</code>:</p>
+<pre>AFTER_HOURS_MESSAGE = "We're currently closed. Thanks for reaching out — we'll call you back tomorrow."
+BUSINESS_TZ = 'Africa/Johannesburg'
+BUSINESS_START_HOUR = 8   # 08:00 local
+BUSINESS_END_HOUR = 17    # 17:00 local, i.e. open [08:00, 17:00)
+DEDUP_WINDOW_HOURS = 12   # don't re-send within this window</pre>
+<p>Edit these directly in the file to match a client's actual hours, timezone, message wording, or how long to wait before sending the canned reply to the same number again.</p>
+
+<h2>4. Auto-Reply Log</h2>
+<p>Every reply actually sent is recorded in a small log, viewable under <strong>Settings &rarr; Technical &rarr; After-Hours Reply Log</strong>. Since the reply bypasses Odoo's normal send path, nothing else in Odoo records show that it went out &mdash; this log is the only record, and it's what the 12-hour de-duplication check reads from.</p>
+
+<img style="width:100%; height:70%; display:block; margin:1.25rem 0; border:1px solid #ddd; border-radius:4px;" src="screenshot-after-hours-log-1.png" alt="After-Hours Auto-Reply Log list view">
+<p class="caption">screenshot-after-hours-log-1.png</p>
+
+<img style="width:100%; height:auto; display:block; margin:1.25rem 0; border:1px solid #ddd; border-radius:4px;" src="screenshot-after-hours-log-2.png" alt="After-Hours Auto-Reply Log menu item">
+<p class="caption">screenshot-after-hours-log-2.png</p>
+
+<h2>5. Installation</h2>
+<p>Depends on <code>whatsapp</code> and <code>base_automation</code>. Install the module as usual from Apps.</p>
+<ol>
+  <li>The Automated Action and its server action are included as data and installed automatically.</li>
+  <li>If you'd rather configure the trigger by hand instead, comment out the data file line in <code>__manifest__.py</code> and create the Automated Action yourself under Settings &rarr; Technical &rarr; Automation Rules, calling <code>record.send_after_hours_reply_if_needed()</code> on <code>whatsapp.message</code>, triggered on create, filtered to <code>message_type = inbound</code>.</li>
+  <li>Open <code>models/whatsapp_message.py</code> and adjust the four constants (see Configuration above) to the client's real hours, timezone, and wording.</li>
+  <li>Send a test WhatsApp message to the account outside those hours and confirm the reply arrives, then check the Auto-Reply Log to confirm it was recorded.</li>
+</ol>
+
+<div class="warning">
+  <strong>Why this logic lives in a normal module, not a Server Action</strong>
+  Automated Action / Server Action code runs through <code>safe_eval</code>, which blocks the <code>requests</code> and <code>pytz</code> imports this needs. The Automated Action itself only calls the method; all the actual logic lives here, in an ordinary installed Python file that Odoo imports the normal way.
+</div>
+
+</body>
+</html>
