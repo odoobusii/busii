@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_server_whatsapp_after_hours_reply" model="ir.actions.server">
+        <field name="name">Send WhatsApp After-Hours Reply</field>
+        <field name="model_id" ref="whatsapp.model_whatsapp_message"/>
+        <field name="state">code</field>
+        <field name="code">record.send_after_hours_reply_if_needed()</field>
+    </record>
+
+    <record id="automation_whatsapp_after_hours_reply" model="base.automation">
+        <field name="name">WhatsApp: After-Hours Auto-Reply</field>
+        <field name="model_id" ref="whatsapp.model_whatsapp_message"/>
+        <field name="trigger">on_create</field>
+        <field name="filter_domain">[('message_type', '=', 'inbound')]</field>
+        <field name="action_server_ids" eval="[(4, ref('action_server_whatsapp_after_hours_reply'))]"/>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>
