@@ -26,7 +26,24 @@ All in `models/whatsapp_message.py`, top of the file:
 | `AFTER_HOURS_MESSAGE` | The reply text |
 | `BUSINESS_TZ` | Timezone for the hours check (default `Africa/Johannesburg`) |
 | `BUSINESS_START_HOUR` / `BUSINESS_END_HOUR` | Office hours window, Mon–Fri |
+| `SATURDAY_END_HOUR` | Saturday closing hour (opens at `BUSINESS_START_HOUR`); Sunday is always after hours |
 | `DEDUP_WINDOW_HOURS` | Don't re-send to the same number within this many hours (default 12) |
+
+Example constants (edit in `models/whatsapp_message.py`):
+
+```python
+AFTER_HOURS_MESSAGE = (
+   "Good day,\n"
+   "Thank you for contacting GC Fires.\n"
+   "We are currently out of the office and will respond to your message as soon as we are back in the office.\n"
+   "We appreciate your patience."
+)
+BUSINESS_TZ = 'Africa/Johannesburg'
+BUSINESS_START_HOUR = 8   # 08:00 local
+BUSINESS_END_HOUR = 17    # 17:00 local, i.e. open [08:00, 17:00) on weekdays
+SATURDAY_END_HOUR = 12    # 12:00 local, i.e. open [08:00, 12:00) on Saturdays
+DEDUP_WINDOW_HOURS = 12   # don't re-send to the same number within this window
+```
 
 ## Install
 

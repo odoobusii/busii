@@ -1,10 +1,3 @@
-# Part of Odoo. Custom module.
-#
-# This file is a normal installed-module Python file, compiled and imported
-# the ordinary way by Odoo -- it is NOT run through safe_eval, so `import
-# requests` / `import pytz` below work fine. (Contrast with Automated Action
-# / Server Action code, which IS run through safe_eval and blocks both.)
-
 import logging
 from datetime import timedelta
 
@@ -15,11 +8,17 @@ from odoo import fields, models
 
 _logger = logging.getLogger(__name__)
 
-# --- Business rules -- adjust these three to match Megan's actual hours/timezone ---
-AFTER_HOURS_MESSAGE = "We're currently closed. Thanks for reaching out — we'll call you back tomorrow."
+# --- Business rules -- adjust these to match Megan's actual hours/timezone ---
+AFTER_HOURS_MESSAGE = (
+    "Good day,\n"
+    "Thank you for contacting GC Fires.\n"
+    "We are currently out of the office and will respond to your message as soon as we are back in the office.\n"
+    "We appreciate your patience."
+)
 BUSINESS_TZ = 'Africa/Johannesburg'
 BUSINESS_START_HOUR = 8   # 08:00 local
-BUSINESS_END_HOUR = 17    # 17:00 local, i.e. open [08:00, 17:00)
+BUSINESS_END_HOUR = 17    # 17:00 local, i.e. open [08:00, 17:00) on weekdays
+SATURDAY_END_HOUR = 12    # 12:00 local, i.e. open [08:00, 12:00) on Saturdays
 DEDUP_WINDOW_HOURS = 12   # don't re-send the canned reply to the same number within this window
 
 GRAPH_API_VERSION = 'v20.0'
@@ -64,9 +63,19 @@ class WhatsappMessage(models.Model):
         tz = pytz.timezone(BUSINESS_TZ)
         now_utc = pytz.UTC.localize(fields.Datetime.now())
         now_local = now_utc.astimezone(tz)
-        is_weekend = now_local.weekday() >= 5  # 5=Sat, 6=Sun
-        is_outside_hours = not (BUSINESS_START_HOUR <= now_local.hour < BUSINESS_END_HOUR)
-        return is_weekend or is_outside_hours
+        weekday = now_local.weekday()  # 0=Mon .. 5=Sat, 6=Sun
+        hour = now_local.hour
+
+        # Sunday: always after hours
+        if weekday == 6:
+            return True
+
+        # Saturday: office closes early at SATURDAY_END_HOUR
+        if weekday == 5:
+            return not (BUSINESS_START_HOUR <= hour < SATURDAY_END_HOUR)
+
+        # Weekdays: use configured business hours
+        return not (BUSINESS_START_HOUR <= hour < BUSINESS_END_HOUR)
 
     def _after_hours_has_recent_reply(self):
         self.ensure_one()
