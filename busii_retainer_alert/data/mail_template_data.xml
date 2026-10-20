@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="mail_template_retainer_alert" model="mail.template">
+            <field name="name">Retainer: Threshold Reached</field>
+            <field name="model_id" ref="busii_retainer_alert.model_busii_retainer_alert"/>
+            <field name="subject">Retainer alert: {{ object.partner_id.name }} at {{ '%.0f' % object.usage_percent }}% for {{ object.period_label }}</field>
+            <field name="email_from">{{ (object.company_id.email_formatted or user.email_formatted) }}</field>
+            <field name="description">Sent to the customer's alert recipients when logged hours reach the retainer threshold for the month</field>
+            <field name="auto_delete" eval="False"/>
+            <field name="body_html" type="html">
+<div style="margin: 0px; padding: 0px;">
+    <p>Hello team,</p>
+    <p>
+        <strong t-out="object.partner_id.name or ''">Customer</strong> has used
+        <strong t-out="'%.0f' % object.usage_percent">80</strong>% of their monthly retainer
+        for <t t-out="object.period_label or ''">October 2026</t>.
+    </p>
+    <table style="border-collapse: collapse; margin: 12px 0;">
+        <tr>
+            <td style="padding: 4px 12px 4px 0;">Retainer hours</td>
+            <td style="padding: 4px 0;"><strong t-out="'%.2f' % object.retainer_hours">10.00</strong></td>
+        </tr>
+        <tr>
+            <td style="padding: 4px 12px 4px 0;">Hours logged</td>
+            <td style="padding: 4px 0;"><strong t-out="'%.2f' % object.hours_used">8.00</strong></td>
+        </tr>
+        <tr>
+            <td style="padding: 4px 12px 4px 0;">Hours remaining</td>
+            <td style="padding: 4px 0;"><strong t-out="'%.2f' % max(object.retainer_hours - object.hours_used, 0)">2.00</strong></td>
+        </tr>
+    </table>
+    <p>Any time logged beyond the retainer should be charged to the customer as extra.</p>
+</div>
+            </field>
+        </record>
+    </data>
+</odoo>

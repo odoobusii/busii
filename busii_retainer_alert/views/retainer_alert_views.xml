@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_busii_retainer_alert_list" model="ir.ui.view">
+        <field name="name">busii.retainer.alert.list</field>
+        <field name="model">busii.retainer.alert</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0">
+                <field name="period_start" string="Month"/>
+                <field name="partner_id"/>
+                <field name="retainer_hours" widget="float_time"/>
+                <field name="hours_used" widget="float_time"/>
+                <field name="usage_percent"/>
+                <field name="user_ids" widget="many2many_tags"/>
+                <field name="create_date" string="Alerted On"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_busii_retainer_alert_search" model="ir.ui.view">
+        <field name="name">busii.retainer.alert.search</field>
+        <field name="model">busii.retainer.alert</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="partner_id"/>
+                <filter name="group_partner" string="Customer" context="{'group_by': 'partner_id'}"/>
+                <filter name="group_month" string="Month" context="{'group_by': 'period_start:month'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_busii_retainer_alert" model="ir.actions.act_window">
+        <field name="name">Retainer Alerts</field>
+        <field name="res_model">busii.retainer.alert</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No retainer alerts yet</p>
+            <p>Set monthly retainer hours and alert recipients on a customer's Retainer tab.</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_busii_retainer_alert"
+              name="Retainer Alerts"
+              parent="project.menu_project_report"
+              action="action_busii_retainer_alert"
+              sequence="90"/>
+</odoo>

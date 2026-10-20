@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_partner_form_retainer" model="ir.ui.view">
+        <field name="name">res.partner.form.retainer</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Retainer" name="retainer" groups="project.group_project_user"
+                      invisible="parent_id">
+                    <group>
+                        <group string="Settings">
+                            <field name="retainer_hours" widget="float_time"/>
+                            <field name="retainer_alert_threshold"/>
+                            <field name="retainer_alert_user_ids" widget="many2many_tags"/>
+                        </group>
+                        <group string="This Month" invisible="retainer_hours &lt;= 0">
+                            <field name="retainer_hours_used" widget="float_time"/>
+                            <field name="retainer_usage_percent" widget="progressbar"/>
+                        </group>
+                    </group>
+                    <field name="retainer_alert_ids" readonly="1" invisible="not retainer_alert_ids">
+                        <list>
+                            <field name="period_label"/>
+                            <field name="retainer_hours" widget="float_time"/>
+                            <field name="hours_used" widget="float_time"/>
+                            <field name="usage_percent"/>
+                            <field name="create_date" string="Alerted On"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>
