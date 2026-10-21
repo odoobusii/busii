@@ -55,6 +55,9 @@ class TestRetainerAlert(TransactionCase):
         self.assertEqual(len(mails), 1)
         self.assertEqual(set(mails.recipient_ids.ids), {self.manager.partner_id.id, self.dev.partner_id.id})
         self.assertIn('Retainer Customer', mails.subject)
+        cron = self.env.ref('mail.ir_cron_mail_scheduler_action')
+        self.assertTrue(self.env['ir.cron.trigger'].sudo().search_count([('cron_id', '=', cron.id)]),
+                        'Mail queue should be triggered immediately')
         # More time in the same month does not send again
         self._log(2)
         self.assertEqual(len(self._alerts()), 1)

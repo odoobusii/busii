@@ -36,13 +36,21 @@ class RetainerAlert(models.Model):
         template = self.env.ref('busii_retainer_alert.mail_template_retainer_alert', raise_if_not_found=False)
         if not template:
             return
+        queued = False
         for alert in self:
             partners = alert.user_ids.partner_id
             if not partners:
                 continue
             template.send_mail(
                 alert.id,
-                force_send=False,  # queued; Odoo's mail queue cron sends it
+                force_send=False,  # queued, so a mail server issue never blocks the timesheet save
                 email_values={'recipient_ids': [(6, 0, partners.ids)]},
                 email_layout_xmlid='mail.mail_notification_light',
             )
+            queued = True
+        if queued:
+            # The Email Queue Manager only runs hourly by default; ask it to run now
+            # (in the background, after this transaction commits).
+            cron = self.env.ref('mail.ir_cron_mail_scheduler_action', raise_if_not_found=False)
+            if cron:
+                cron.sudo()._trigger()

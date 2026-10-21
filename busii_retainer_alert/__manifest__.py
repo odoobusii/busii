@@ -1,6 +1,6 @@
 {
     'name': 'Customer Retainer Hours Alert',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.0.1',
     'category': 'Services/Timesheets',
     'summary': 'Monthly retainer hours per customer with an email alert when timesheets reach a set percentage',
     'description': """

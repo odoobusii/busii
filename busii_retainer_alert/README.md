@@ -22,7 +22,8 @@ All timesheet lines (analytic lines with a project) whose customer resolves to t
 
 ## Notes
 
-- Emails go via the outgoing mail queue (`force_send=False`), so on Odoo.sh they leave on the next mail queue cron run (usually within a minute or two).
+- The check runs on every timesheet save (create, or a change to hours/date/project/task/customer). There is no scheduled job.
+- Emails are queued (`force_send=False`) so a mail server problem never blocks saving a timesheet. The module then triggers the "Mail: Email Queue Manager" scheduled action (hourly by default) to run straight away, so the alert normally goes out within seconds of the save.
 - Hours are compared in hours (`unit_amount`). If the company encodes timesheets in days, check the stored values before relying on this.
 - The email template is `noupdate`: edit it under Settings › Technical › Email Templates ("Retainer: Threshold Reached") without upgrades overwriting it.
 - Lowering or raising the retainer mid-month does not resend an alert already sent for that month.
