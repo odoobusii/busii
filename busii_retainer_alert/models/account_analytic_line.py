@@ -1,7 +1,8 @@
 from odoo import api, models
 
-# Changes to these fields can move hours into or out of a customer's month.
-RETAINER_TRIGGER_FIELDS = {'unit_amount', 'date', 'project_id', 'task_id', 'partner_id'}
+# Changes to these fields can move hours into or out of a customer's month,
+# or into or out of an excluded category.
+RETAINER_TRIGGER_FIELDS = {'unit_amount', 'date', 'project_id', 'task_id', 'partner_id', 'name', 'helpdesk_ticket_id'}
 
 
 class AccountAnalyticLine(models.Model):
@@ -18,6 +19,13 @@ class AccountAnalyticLine(models.Model):
         if RETAINER_TRIGGER_FIELDS & set(vals):
             self._retainer_check_alerts()
         return res
+
+    def _retainer_ticket(self):
+        """The helpdesk ticket of the line, if Helpdesk Timesheet is installed."""
+        self.ensure_one()
+        if 'helpdesk_ticket_id' in self._fields:
+            return self.helpdesk_ticket_id
+        return self.env['res.partner']  # empty recordset; skipped by the caller
 
     def _retainer_check_alerts(self):
         to_check = set()

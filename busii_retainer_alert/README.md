@@ -20,6 +20,23 @@ The Retainer tab also shows hours used this month and a progress bar. All alerts
 
 All timesheet lines (analytic lines with a project) whose customer resolves to that company — including lines on projects/tasks set to one of the company's individual contacts. The timesheet's customer comes from the task's customer, falling back to the project's customer (standard `hr_timesheet` behaviour).
 
+## Work excluded from the retainer
+
+These hours do **not** use up the retainer and do **not** count towards the alert. They are shown per category on the Retainer tab ("Excluded from Retainer"):
+
+| Category | Matched when (any case, "contains") |
+|---|---|
+| Upskilling | "upskilling" in the timesheet line description, or the task/ticket description |
+| Solution Investigation | "solution investigation" in the same places |
+| Solution Definition | "solution definition" in the same places |
+| Development Requests | the task or ticket has a tag whose name contains "development request" |
+
+A line that matches more than one category is counted once, under the first one in the table. HTML formatting in task/ticket descriptions is stripped before matching. Ticket matching uses the Helpdesk Timesheet ticket link (`helpdesk_ticket_id`) when that module is installed.
+
+The tab also shows **Total Hours Logged** (retainer + excluded).
+
+Changing a task's tags or description does not by itself re-check the alert; the next timesheet save for that customer does.
+
 ## Notes
 
 - The check runs on every timesheet save (create, or a change to hours/date/project/task/customer). There is no scheduled job.

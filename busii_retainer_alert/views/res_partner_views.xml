@@ -17,6 +17,16 @@
                         <group string="This Month" invisible="retainer_hours &lt;= 0">
                             <field name="retainer_hours_used" widget="float_time"/>
                             <field name="retainer_usage_percent" widget="progressbar"/>
+                            <field name="retainer_hours_total" widget="float_time"/>
+                        </group>
+                    </group>
+                    <group invisible="retainer_hours &lt;= 0">
+                        <group string="Excluded from Retainer (This Month)">
+                            <field name="retainer_hours_upskilling" widget="float_time"/>
+                            <field name="retainer_hours_solution_investigation" widget="float_time"/>
+                            <field name="retainer_hours_solution_definition" widget="float_time"/>
+                            <field name="retainer_hours_development_request" widget="float_time"/>
+                            <field name="retainer_hours_excluded" widget="float_time" class="fw-bold"/>
                         </group>
                     </group>
                     <field name="retainer_alert_ids" readonly="1" invisible="not retainer_alert_ids">

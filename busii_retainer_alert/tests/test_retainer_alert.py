@@ -81,6 +81,47 @@ class TestRetainerAlert(TransactionCase):
         self._log(9)
         self.assertFalse(self._alerts())
 
+    def _log_on(self, task, hours, name='work', day=date(2026, 10, 5)):
+        return self.env(user=self.dev)['account.analytic.line'].create({
+            'name': name, 'task_id': task.id, 'project_id': self.project.id,
+            'employee_id': self.employee.id, 'unit_amount': hours, 'date': day,
+        })
+
+    def test_excluded_work_does_not_count(self):
+        dev_tag = self.env['project.tags'].create({'name': 'Development Requests'})
+        task_tagged = self.env['project.task'].create({
+            'name': 'New report', 'project_id': self.project.id, 'tag_ids': [(6, 0, dev_tag.ids)]})
+        task_desc = self.env['project.task'].create({
+            'name': 'Look into stock issue', 'project_id': self.project.id,
+            'description': '<p>Solution <b>Investigation</b> for negative stock</p>'})
+        self._log_on(self.task, 3, name='Upskilling – Odoo 18 accounting')
+        self._log_on(self.task, 2, name='Solution definition workshop')
+        self._log_on(task_tagged, 4)
+        self._log_on(task_desc, 5)
+        self._log_on(self.task, 7.5)  # normal support: counts
+        # 7.5h of 10h counts -> below 80%, no alert despite 21.5h logged
+        self.assertFalse(self._alerts())
+        breakdown = self.customer._retainer_breakdown(date(2026, 10, 1))
+        self.assertEqual(breakdown, {
+            'retainer': 7.5, 'upskilling': 3.0, 'solution_definition': 2.0,
+            'development_request': 4.0, 'solution_investigation': 5.0,
+        })
+        # The next normal hour crosses 80%
+        self._log_on(self.task, 1)
+        self.assertEqual(len(self._alerts()), 1)
+        self.assertAlmostEqual(self._alerts().hours_used, 8.5)
+
+    def test_tab_breakdown_fields(self):
+        today = date.today()
+        self._log_on(self.task, 2, name='upskilling on studio', day=today)
+        self._log_on(self.task, 1, day=today)
+        self.customer.invalidate_recordset()
+        self.assertAlmostEqual(self.customer.retainer_hours_used, 1.0)
+        self.assertAlmostEqual(self.customer.retainer_hours_upskilling, 2.0)
+        self.assertAlmostEqual(self.customer.retainer_hours_excluded, 2.0)
+        self.assertAlmostEqual(self.customer.retainer_hours_total, 3.0)
+        self.assertAlmostEqual(self.customer.retainer_usage_percent, 10.0)
+
     def test_usage_compute(self):
         today = date.today()
         self._log(2.5, day=today)
