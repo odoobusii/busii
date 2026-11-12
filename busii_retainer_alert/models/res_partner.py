@@ -130,6 +130,37 @@ class ResPartner(models.Model):
             result[category] = result.get(category, 0.0) + line.unit_amount
         return result
 
+    def _retainer_period_category_lines(self, period_start, category):
+        """Timesheet lines of the month that fall in `category` ('retainer' or an excluded key).
+
+        Uses exactly the same classification as the hours shown on the tab, so the
+        list it opens always adds up to the number on screen.
+        """
+        self.ensure_one()
+        cache = {}
+        return self._retainer_period_lines(period_start).filtered(
+            lambda line: self._retainer_line_category(line, cache) == category
+        )
+
+    def action_view_retainer_timesheets(self):
+        """Open the timesheets behind 'Retainer Hours Used' for the current month."""
+        self.ensure_one()
+        category = self.env.context.get('retainer_category', 'retainer')
+        period_start = fields.Date.context_today(self).replace(day=1)
+        lines = self._retainer_period_category_lines(period_start, category)
+        label = dict((key, label) for key, label, *_ in EXCLUDED_CATEGORIES).get(category, 'Retainer Hours')
+        action = self.env['ir.actions.act_window']._for_xml_id('hr_timesheet.timesheet_action_all')
+        title = f"{label} – {self.name} – {period_start.strftime('%B %Y')}"
+        action.update({
+            'name': title,
+            'display_name': title,  # Odoo 18 breadcrumbs use display_name when present
+            'domain': [('id', 'in', lines.ids)],
+            # No default filters (the standard action pre-filters on "This Week"),
+            # otherwise the list would not match the number on the tab.
+            'context': {'is_timesheet': 1, 'create': False},
+        })
+        return action
+
     def _retainer_hours_for_period(self, period_start):
         """Hours that count towards the retainer in the month (excluded work left out)."""
         self.ensure_one()

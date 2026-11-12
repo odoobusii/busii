@@ -1,5 +1,7 @@
 from datetime import date
 
+from dateutil.relativedelta import relativedelta
+
 from odoo.tests import TransactionCase, tagged
 
 
@@ -121,6 +123,23 @@ class TestRetainerAlert(TransactionCase):
         self.assertAlmostEqual(self.customer.retainer_hours_excluded, 2.0)
         self.assertAlmostEqual(self.customer.retainer_hours_total, 3.0)
         self.assertAlmostEqual(self.customer.retainer_usage_percent, 10.0)
+
+    def test_drilldown_matches_tab(self):
+        today = date.today()
+        dev_tag = self.env['project.tags'].create({'name': 'Development Requests'})
+        task_tagged = self.env['project.task'].create({
+            'name': 'New report', 'project_id': self.project.id, 'tag_ids': [(6, 0, dev_tag.ids)]})
+        counted = self._log_on(self.task, 1.5, day=today) | self._log_on(self.task, 2, day=today)
+        self._log_on(self.task, 3, name='Upskilling', day=today)
+        self._log_on(task_tagged, 4, day=today)
+        last_month = self._log_on(self.task, 6, day=today.replace(day=1) - relativedelta(days=1))
+        action = self.customer.with_context(retainer_category='retainer').action_view_retainer_timesheets()
+        lines = self.env['account.analytic.line'].search(action['domain'])
+        self.assertEqual(lines, counted)
+        self.assertNotIn(last_month, lines)
+        self.customer.invalidate_recordset()
+        self.assertAlmostEqual(sum(lines.mapped('unit_amount')), self.customer.retainer_hours_used)
+        self.assertNotIn('search_default_week', action['context'])
 
     def test_usage_compute(self):
         today = date.today()
