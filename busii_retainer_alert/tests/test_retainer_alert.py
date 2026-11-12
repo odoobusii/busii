@@ -140,6 +140,8 @@ class TestRetainerAlert(TransactionCase):
         self.customer.invalidate_recordset()
         self.assertAlmostEqual(sum(lines.mapped('unit_amount')), self.customer.retainer_hours_used)
         self.assertNotIn('search_default_week', action['context'])
+        self.assertEqual(action['views'][0][1], 'list')
+        self.assertNotIn('grid', [mode for _id, mode in action['views']])
 
     def test_usage_compute(self):
         today = date.today()

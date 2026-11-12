@@ -158,6 +158,15 @@ class ResPartner(models.Model):
             # No default filters (the standard action pre-filters on "This Week"),
             # otherwise the list would not match the number on the tab.
             'context': {'is_timesheet': 1, 'create': False},
+            # Always open as a list. Timesheets (Enterprise, timesheet_grid) puts the
+            # Grid view first on this action, which can't show a fixed set of lines.
+            'view_mode': 'list,form,pivot,graph',
+            'views': [
+                (self.env.ref('hr_timesheet.hr_timesheet_line_tree').id, 'list'),
+                (self.env.ref('hr_timesheet.hr_timesheet_line_form').id, 'form'),
+                (False, 'pivot'),
+                (False, 'graph'),
+            ],
         })
         return action
 
