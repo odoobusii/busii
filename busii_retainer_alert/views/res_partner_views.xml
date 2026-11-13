@@ -14,13 +14,23 @@
                             <field name="retainer_alert_threshold"/>
                             <field name="retainer_alert_user_ids" widget="many2many_tags"/>
                         </group>
-                        <group string="This Month" invisible="retainer_hours &lt;= 0">
-                            <field name="retainer_hours_used" widget="float_time"/>
-                            <field name="retainer_usage_percent" widget="progressbar"/>
+                        <group string="This Month">
+                            <label for="retainer_hours_used"/>
+                            <div class="o_row">
+                                <button name="action_view_retainer_timesheets" type="object"
+                                        class="btn btn-link p-0 fw-bold d-inline-flex align-items-center text-nowrap"
+                                        context="{'retainer_category': 'retainer'}"
+                                        title="View the timesheets counted in this number">
+                                    <field name="retainer_hours_used" widget="float_time"/>
+                                    <i class="fa fa-external-link ms-1" role="img" aria-label="View timesheets"/>
+                                </button>
+                            </div>
+                            <field name="retainer_usage_percent" widget="progressbar"
+                                   invisible="retainer_hours &lt;= 0"/>
                             <field name="retainer_hours_total" widget="float_time"/>
                         </group>
                     </group>
-                    <group invisible="retainer_hours &lt;= 0">
+                    <group>
                         <group string="Excluded from Retainer (This Month)">
                             <field name="retainer_hours_upskilling" widget="float_time"/>
                             <field name="retainer_hours_solution_investigation" widget="float_time"/>
